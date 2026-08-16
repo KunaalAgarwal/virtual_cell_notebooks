@@ -14,3 +14,6 @@ Activate it with ```. <environment_name>/bin/activate``` (Linux), ```source <env
 Install packages: ```pip install requirements.txt```
 - If you add any new packages please update the requirements.txt so everyone will be able to run your notebook (```pip freeze > requirements.txt```)
 
+For large data files we will be using git large file storage (LFS). If you generate a csv of results or add in a new data file ensure you ```git lfs track <file_path>``` prior to committing. 
+
+For any AI workflows (hooks, etc.) please commit these if you think they would be useful to the group. 
