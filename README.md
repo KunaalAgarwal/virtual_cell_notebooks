@@ -4,6 +4,8 @@ Code and ideation for the [virtual cell challenge](https://virtualcellchallenge.
 
 # Setup
 
+```git clone https://github.com/KunaalAgarwal/virtual_cell_notebooks.git```
+
 **[uv](https://docs.astral.sh/uv/getting-started/features/)**: alternative python package manager (alternative to pip and the like)
 - Singular tool which replaces pip, virtual environments, etc.
 
