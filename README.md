@@ -18,6 +18,8 @@ Add new packages ```uv add <package 1> <package 2> ...<package n>```
 
 **[vcc](https://vcc-cli-wiki.virtualcellchallenge.org/)**: competition specific package.
 
+Install: ```uv tool install vcc-cli``` (other ways to do this too)
+
 Login into the vcc command line with your account: ```vcc login --token-stdin``` 
 - Insert the API key (https://virtualcellchallenge.org/app > Credentials > Generate API Key)
 
@@ -37,3 +39,17 @@ Run with via vscode jupyter notebook interface via .venv/bin/python environment.
 Run with jupyterlab cli: 
 - ```uv run juypter lab --no-browser src/```
 - Grab the url from the result of this command and paste in browser
+
+# Data
+
+## 2026 validation data: 
+
+Located at data/validation_2026.
+
+Contexts A, B, and C refer to a specific cell type and include RNA sequencing data for 18,400 cells of that type. These 18,400 cells are controls, no real CRISPR experiment was run on them. A a non-sequencing guide RNA was administered but these RNAs purposely have no binding sites and thus nothing occurred. There were a total of 46 non-targeting guides and 400 cells for each. 
+
+Data is formatted as .h5ad files which compress the large size of scRNA-seq data. This can be extracted via scanpy. See data/extract_h5ad.ipynb for examples and information. 
+
+The gene_names.csv contains all 18,533 genes whose expression was estimated using the scRNA-req experiment. 
+
+The pert_counts.csv contains a proper subset of the total genes which represent the genes that we will "simulate" being knocked out via CRISPRi. There are 300 genes. **Our output is a population of 400 cells with a perturbed gene expression profile for each of the 300 genes (i.e. our dataset should contain 138400 cells = 18400 control + 120000 perturbed).**
