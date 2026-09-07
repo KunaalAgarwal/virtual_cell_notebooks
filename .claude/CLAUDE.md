@@ -1,1 +1,4 @@
 We are competiting in the [virtual cell competition](https://virtualcellchallenge.org/). Familiarize yourself with the structure of the competition. Please also review the source material discussed in https://github.com/KunaalAgarwal/virtual_cell_background.
+
+Additional resources:
+https://vcc-cli-wiki.virtualcellchallenge.org/

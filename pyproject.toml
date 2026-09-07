@@ -1,0 +1,17 @@
+[project]
+name = "virtual-cell-notebooks"
+version = "0.1.0"
+description = "Code and ideation for the virtual cell challenge"
+readme = "README.md"
+authors = [
+    { name = "Kunaal Agarwal", email = "kunaal.agarwal1@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "cell-eval>=0.8.2",
+    "gcsfs>=2026.8.0",
+    "ipykernel>=7.3.0",
+    "jupyterlab>=4.6.3",
+    "pandas>=2.3.3",
+    "scanpy>=1.11.5",
+]
