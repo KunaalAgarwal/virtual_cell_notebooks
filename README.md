@@ -43,7 +43,6 @@ Run with jupyterlab cli:
 ## Submission
 
 Create a .h5ad file containing the perturbation predictions for 300 experiments (knocked out genes), with 400 cells associated with each of those experiments, for each of the cell contexts (3). The file will contain: 360000 cells (rows) and 18533 genes. Metadata columns are 'context' (A-F) and 'target_gene' (derived from gene_names.csv). Exclude the non-targeting control sequences. 
-- Shape: 360000 x 18535
 - Values: non-negative integers 
    - $\displaystyle \sum_{g \in {Genes}} value_g < 1000000$
 
