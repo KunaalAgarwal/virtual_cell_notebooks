@@ -4,3 +4,4 @@ __pycache__/
 .ipynb_checkpoints/
 *.h5ad
 *.zip
+*.vcc
