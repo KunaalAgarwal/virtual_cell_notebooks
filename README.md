@@ -12,6 +12,13 @@ Code and ideation for the [virtual cell challenge](https://virtualcellchallenge.
 Install uv if haven't already: https://docs.astral.sh/uv/getting-started/installation/
 
 Install dependencies with ```uv sync```
+- Run ```uv sync``` and nothing else. Never create an environment by hand (```python -m venv```, conda, etc.) — ```uv sync``` builds .venv/ for you from uv.lock. The lockfile is what keeps everyone on byte-identical versions; pyproject.toml alone does not.
+
+Confirm the environment is good (these are the packages that touch .h5ad loading/writing):
+
+```uv run python -c "import anndata, scipy, h5py, scanpy; print(anndata.__version__, scipy.__version__, h5py.__version__, scanpy.__version__)"```
+
+Expected: ```0.12.19 1.17.1 3.16.0 1.11.5``` (some deprecation warnings about `__version__` are normal). Different numbers mean your environment drifted — re-run ```uv sync```.
 
 Add new packages ```uv add <package 1> <package 2> ...<package n>```
 - After adding a new package simply version the uv.lock and pyproject.toml files in your next commit. 
@@ -32,7 +39,13 @@ For any AI workflows (hooks, etc.) please commit these if you think they would b
 
 # Contributing
 
-Add your notebooks to the src/ directory and add a brief summary statement at the top so others can quickly get acclimated. Feel free to create a subdirectory in src as your name so you can keep your files siloed. 
+## Where code goes
+
+- **models/** — model code as plain .py files, never notebooks. Every model script exposes a ```predict(context_paths, gene_names_path, perts_path, out_path)``` function and is also runnable standalone via argparse, so the same file works imported from a notebook or run headless on a remote box.
+- **notebooks/** — exploration and visualization only. Model logic never lives here, even temporarily.
+- **src/** — existing research notebooks (reimplementations of published approaches, data pulls). These stay as-is. When a research thread produces something concrete, extract the model logic into models/ as a .py file at that point.
+
+Add a brief summary statement at the top of each notebook so others can quickly get acclimated. Feel free to create a subdirectory as your name to keep your files siloed. 
 
 Run with via vscode jupyter notebook interface via .venv/bin/python environment. 
 
