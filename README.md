@@ -49,7 +49,11 @@ For any AI workflows (hooks, etc.) please commit these if you think they would b
 
 Add a brief summary statement at the top of each notebook so others can quickly get acclimated. Feel free to create a subdirectory as your name to keep your files siloed. 
 
-Run with via vscode jupyter notebook interface via .venv/bin/python environment. 
+Run via the vscode jupyter notebook interface. **Pick the right kernel** — on Windows the project interpreter is ```.venv\Scripts\python.exe``` (```.venv/bin/python``` on mac/linux). Register a clearly-named kernel once:
+
+```uv run python -m ipykernel install --user --name vcc-notebooks --display-name "VCC virtual_cell_notebooks (.venv)"```
+
+then select **VCC virtual_cell_notebooks (.venv)**. A kernel named only ```Python (.venv)``` may belong to a different repo — picking it gives ```ModuleNotFoundError: No module named 'gcsfs'```. 
 
 Run with jupyterlab cli: 
 - ```uv run juypter lab --no-browser src/```
