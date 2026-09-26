@@ -1,6 +1,6 @@
 Code and ideation for the [virtual cell challenge](https://virtualcellchallenge.org/). 
 
-[Background information](https://github.com/KunaalAgarwal/virtual_cell_background), [team](https://virtualcellchallenge.org/app). 
+[Background information](https://github.com/KunaalAgarwal/virtual_cell_background), [team](https://virtualcellchallenge.org/app), [CLI Guide](https://vcc-cli-wiki.virtualcellchallenge.org/). 
 
 # Setup
 
@@ -55,6 +55,17 @@ Run with jupyterlab cli:
 - ```uv run juypter lab --no-browser src/```
 - Grab the url from the result of this command and paste in browser
 
+## Submission
+
+Create a .h5ad file containing the perturbation predictions for 300 experiments (knocked out genes), with 400 cells associated with each of those experiments, for each of the cell contexts (3). The file will contain: 360000 cells (rows) and 18533 genes. Metadata columns are 'context' (A-F) and 'target_gene' (derived from gene_names.csv). Exclude the non-targeting control sequences. 
+- Values: non-negative integers 
+   - $\displaystyle \sum_{g \in {Genes}} value_g < 1000000$
+
+The order of the gene list in the .h5ad need not be maintained (vcc commands sort innately).
+
+Verify this file is formatted appropirately: ```vcc prep --dry-run ```
+
+
 # Data
 
 ## 2026 validation data: 
@@ -67,4 +78,4 @@ Data is formatted as .h5ad files which compress the large size of scRNA-seq data
 
 The gene_names.csv contains all 18,533 genes whose expression was estimated using the scRNA-req experiment. 
 
-The pert_counts.csv contains a proper subset of the total genes which represent the genes that we will "simulate" being knocked out via CRISPRi. There are 300 genes. **Our output is a population of 400 cells with a perturbed gene expression profile for each of the 300 genes (i.e. our dataset should contain 138400 cells = 18400 control + 120000 perturbed).**
+The pert_counts.csv contains a proper subset of the total genes which represent the genes that we will "simulate" being knocked out via CRISPRi. There are 300 genes. **Our output is a population of 400 cells with a perturbed gene expression profile for each of the 300 genes for each of the contexts. (i.e. our dataset should contain 360000 cells (rows) and 18533 columns).**

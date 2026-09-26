@@ -14,4 +14,6 @@ dependencies = [
     "jupyterlab>=4.6.3",
     "pandas>=2.3.3",
     "scanpy>=1.11.5",
+    "scikit-learn>=1.9.0",
+    "scipy>=1.17.1",
 ]
