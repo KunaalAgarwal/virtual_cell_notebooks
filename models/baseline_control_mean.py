@@ -163,7 +163,7 @@ def main():
                    help="directory holding context_{A,B,C}.h5ad, gene_names.csv, pert_counts.csv")
     p.add_argument("-g", "--genes", type=Path, default=None, help="gene_names.csv (default: <controls-dir>/gene_names.csv)")
     p.add_argument("--perts", type=Path, default=None, help="pert_counts.csv (default: <controls-dir>/pert_counts.csv)")
-    p.add_argument("-o", "--output", type=Path, default=Path("pred.h5ad"))
+    p.add_argument("-o", "--output", type=Path, default=Path("submissions/pred.h5ad"))
     p.add_argument("--cells-per-pert", type=int, default=400)
     p.add_argument("--limit-perts", type=int, default=None, help="use only the first N targets (smoke tests)")
     args = p.parse_args()

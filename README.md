@@ -43,7 +43,9 @@ For any AI workflows (hooks, etc.) please commit these if you think they would b
 
 - **models/** — model code as plain .py files, never notebooks. Every model script exposes a ```predict(context_paths, gene_names_path, perts_path, out_path)``` function and is also runnable standalone via argparse, so the same file works imported from a notebook or run headless on a remote box.
 - **notebooks/** — exploration and visualization only. Model logic never lives here, even temporarily.
-- **src/** — existing research notebooks (reimplementations of published approaches, data pulls). These stay as-is. When a research thread produces something concrete, extract the model logic into models/ as a .py file at that point.
+- **src/** — shared library code (```src/atlas.py``` for Arc Virtual Cell Atlas access) plus existing research notebooks. When a research thread produces something concrete, extract the model logic into models/ as a .py file at that point.
+- **submissions/** — generated ```pred.h5ad``` / ```pred.vcc``` artifacts. Gitignored; these are multi-GB.
+- **data/** — challenge data. ```data/atlas_cache/``` is the gitignored download cache for ```src/atlas.py```.
 
 Add a brief summary statement at the top of each notebook so others can quickly get acclimated. Feel free to create a subdirectory as your name to keep your files siloed. 
 
