@@ -1,36 +1,3 @@
-{
-  "season": "2026",
-  "partition": "val",
-  "panel_id": "vcc2026-val-1",
-  "contexts": [
-    "A",
-    "B",
-    "C"
-  ],
-  "pert_col": "target_gene",
-  "context_col": "context",
-  "control_label": "non-targeting",
-  "n_genes": 18533,
-  "n_constructs": 300,
-  "per_context": {
-    "A": {
-      "n_perturbations": 300,
-      "control_cells": 18400,
-      "ground_truth_cells": 138400,
-      "n_ntc_ids": 46
-    },
-    "B": {
-      "n_perturbations": 300,
-      "control_cells": 18400,
-      "ground_truth_cells": 138400,
-      "n_ntc_ids": 46
-    },
-    "C": {
-      "n_perturbations": 300,
-      "control_cells": 18400,
-      "ground_truth_cells": 138400,
-      "n_ntc_ids": 46
-    }
-  },
-  "cells_per_pert": 400
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:2c2b5d425df817ca35e9edf08282d12494ce42913ba824375bf0f98a1cc676f5
+size 715
