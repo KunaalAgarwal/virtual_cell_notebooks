@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Virtual Cell Challenge: Research Summary</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Research summary for the 2026 Arc Virtual Cell Challenge: control-cell networks, public-screen effect borrowing, noise checks and cited next steps.">
+<style>
+/* Layout: lab-report column with a sticky contents rail on wide screens; numbers set in mono */
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --fg:#17202a; --muted:#5a6672; --line:#dde2e8;
+  --accent:#2457c5; --accent-soft:#e6edfb; --warn:#c2560c; --base:#a3adb8; --oracle:#6b7f95;
+  --display:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141a; --surface:#161d25; --fg:#e4e9ef; --muted:#9aa6b2; --line:#2a3440;
+  --accent:#7aa2ff; --accent-soft:#1c2a45; --warn:#f08a4b; --base:#5d6875; --oracle:#8a9db2; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --surface:#161d25; --fg:#e4e9ef; --muted:#9aa6b2; --line:#2a3440;
+  --accent:#7aa2ff; --accent-soft:#1c2a45; --warn:#f08a4b; --base:#5d6875; --oracle:#8a9db2; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:16px/1.6 var(--body);padding-inline:16px;padding-block:0 64px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px}
+header.top{max-width:1120px;margin:0 auto;padding-block:48px 28px;border-bottom:1px solid var(--line);margin-bottom:32px}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font:700 clamp(30px,5vw,46px)/1.08 var(--display);margin:12px 0 12px;text-wrap:balance;letter-spacing:-.01em}
+.lede{color:var(--muted);max-width:68ch;margin:0}
+.stats{display:flex;flex-wrap:wrap;gap:28px;margin-top:24px}
+.stat b{display:block;font:500 26px/1.1 var(--mono);color:var(--fg)}
+.stat span{font-size:13px;color:var(--muted)}
+.stat.hi b{color:var(--accent)}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 20px);align-self:start;font-size:13.5px}
+nav.toc ol{list-style:none;padding:0;margin:0;display:grid;gap:6px;border-left:1px solid var(--line)}
+nav.toc a{color:var(--muted);text-decoration:none;display:block;padding-left:12px;margin-left:-1px;border-left:2px solid transparent}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--fg);border-left-color:var(--accent)}
+main{min-width:0;max-width:760px}
+main h2{font:700 24px/1.2 var(--display);margin:48px 0 12px;text-wrap:balance;scroll-margin-top:16px}
+main h3{font:600 17px/1.3 var(--body);margin:28px 0 8px}
+main p,main li{max-width:68ch}
+main ul,main ol{padding-left:22px}
+main li{margin:4px 0}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+code{font:13.5px var(--mono);background:var(--accent-soft);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.tw{overflow-x:auto;margin:16px 0}
+table{border-collapse:collapse;width:100%;font-size:14.5px;background:var(--surface);border:1px solid var(--line)}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+td{font-variant-numeric:tabular-nums}
+td strong{color:var(--accent)}
+blockquote.elevator{margin:16px 0;padding:20px 24px;background:var(--surface);border:1px solid var(--line);border-radius:6px;font-size:17px;line-height:1.65}
+blockquote.elevator p{margin:0}
+aside.say{display:block;margin:16px 0;padding:14px 18px;background:var(--accent-soft);border-radius:6px;max-width:68ch}
+.say-k{display:block;font:500 11.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.cite{font-size:.86em;color:var(--muted);white-space:normal}
+.cite a{text-decoration:none}
+.refkey{font:500 12.5px var(--mono);color:var(--accent);scroll-margin-top:16px}
+.refkey:target{background:var(--accent-soft)}
+#references ~ ul li{font-size:14px;overflow-wrap:anywhere}
+.fig{margin:24px 0}
+.fig figcaption{font-size:13px;color:var(--muted)}
+.chart{min-width:560px;width:100%;height:auto;display:block}
+.chart text{fill:var(--fg);font-family:var(--body)}
+.ch-h{font-weight:600;font-size:13px}
+.ch-t,.ch-v{font:11px var(--mono);fill:var(--muted)!important}
+.ch-l{font-size:12.5px}.ch-strong{font-weight:600}
+.ch-grid{stroke:var(--line);stroke-width:1}
+.ch-chance{stroke:var(--warn);stroke-dasharray:3 3;stroke-width:1.5}
+.bar-ours{fill:var(--accent)}.bar-null{fill:var(--warn)}.bar-base{fill:var(--base)}.bar-oracle{fill:var(--oracle)}
+footer{max-width:1120px;margin:48px auto 0;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+@media (max-width:860px){.wrap{grid-template-columns:minmax(0,1fr)}nav.toc{position:static;border-bottom:1px solid var(--line);padding-bottom:16px}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+*{box-sizing:border-box}html{color-scheme:light}body{margin:0}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="eyebrow">Virtual Cell Challenge 2026 · research summary · 13 Oct 2026</div>
+  <h1>From control-cell networks to public screens</h1>
+  <p class="lede">What we tried, what failed, what works, and what to try next, with the published work behind each idea. Written for readers without a single-cell background.</p>
+  <div class="stats">
+    <div class="stat"><b>0.00</b><span>control-cell network, Pearson</span></div>
+    <div class="stat"><b>0.19 → 0.25</b><span>Pearson, average vs screen similarity</span></div>
+    <div class="stat hi"><b>0.52 → 0.66</b><span>cell-eval discrimination (oracle 0.90)</span></div>
+    <div class="stat"><b>272 / 300</b><span>2026 targets in the K562 screen</span></div>
+  </div>
+</header>
+<div class="wrap">
+  <nav class="toc" aria-label="Contents"><ol><li><a href="#in-one-paragraph">In one paragraph</a></li><li><a href="#1-background">1. Background</a></li><li><a href="#2-the-task">2. The task</a></li><li><a href="#3-rounds-1-2-a-wiring-diagram-from-contr">3. Rounds 1–2: a wiring diagram from control cells does not work</a></li><li><a href="#4-how-the-challenge-scores-and-why-the-a">4. How the challenge scores, and why the average fails it</a></li><li><a href="#5-round-3-borrow-effects-from-genes-that">5. Round 3: borrow effects from genes that behave alike in public screens</a></li><li><a href="#6-the-null-control-is-the-gain-from-the-">6. The null control: is the gain from the screens or from amplifying?</a></li><li><a href="#7-noise-check-are-the-gains-real">7. Noise check: are the gains real?</a></li><li><a href="#8-what-changes-for-2026">8. What changes for 2026</a></li><li><a href="#9-proposed-improvements-details-and-full">9. Proposed improvements</a></li><li><a href="#glossary">Glossary</a></li><li><a href="#questions">Questions</a></li><li><a href="#references">References</a></li></ol></nav>
+  <main>
+<h2 id="in-one-paragraph">In one paragraph</h2>
+<blockquote class="elevator">
+<p>We are asked to predict how three unfamiliar cell types respond when one gene is switched down, given only their normal cells. Our first idea, learning a wiring diagram of genes from normal cells and simulating a knockdown through it, does not work: on last year's stem-cell data its predictions correlate with reality at 0.00. What does work is borrowing from real knockdown experiments. Large public screens in other cell lines tell us which genes behave alike when knocked down; predicting a knockdown as a blend of the effects of genes that behave like it lifts correlation from 0.19 to 0.25, and on the challenge's official scorer it moves us from chance (0.52) to 0.66 at telling knockdowns apart. A shuffled control confirms the gain comes from the screens, and confidence intervals with held-out tuning confirm it is not noise. The next step is to test the same idea across cell lines, which is what the challenge actually scores.</p>
+</blockquote>
+
+<h2 id="1-background">1. Background</h2>
+<ul>
+<li><strong>Gene expression.</strong> Each cell carries about 20,000 genes. How strongly each one is "on" is measured by counting its RNA molecules.</li>
+<li><strong>Single-cell RNA-seq.</strong> Counts RNA for thousands of genes in each of thousands of cells. The result is a table: one row per cell, one column per gene, mostly zeros.</li>
+<li><strong>CRISPRi knockdown.</strong> A guide RNA steers a disabled Cas9 to one gene and turns it down. Other genes then change because genes regulate each other. The full set of changes is the knockdown's <strong>effect</strong>.</li>
+<li><strong>Non-targeting controls.</strong> Cells given a guide that matches nothing. They show the cell's normal state.</li>
+<li><strong>Perturb-seq.</strong> Thousands of different knockdowns done at once in one dish, with single-cell RNA-seq reading out both which guide each cell got and its expression <span class="cite">[<a href="#ref-Replogle2022">Replogle2022</a>]</span>.</li>
+</ul>
+<h2 id="2-the-task">2. The task</h2>
+<ul>
+<li>2026 Arc Virtual Cell Challenge <span class="cite">[<a href="#ref-Roohani2025">Roohani2025</a>]</span>. For each of three new cell lines (contexts A, B, C) we get 18,400 control cells and a list of 300 target genes. We must output 400 predicted cells for each target in each context.</li>
+<li><strong>Zero-shot:</strong> we never see knockdown data from A, B or C. Arc ran those experiments and scores us against them.</li>
+<li>The contexts differ a lot: A looks lymphoid (immune), B and C epithelial. The final phase uses three more unseen contexts (D, E, F).</li>
+<li><strong>What we may train on:</strong> last year's H1 stem-cell data (150 knockdowns with real effects) and any public data.</li>
+<li><strong>H1 is our test bench.</strong> It is the only dataset in hand where we can hide a knockdown, predict it, and check.</li>
+</ul>
+<h2 id="3-rounds-1-2-a-wiring-diagram-from-contr">3. Rounds 1–2: a wiring diagram from control cells does not work</h2>
+<p><strong>The idea</strong> (from <a href="https://github.com/KunaalAgarwal/virtual_cell_notebooks/blob/main/notes/grn_linear_model.pdf"><code>notes/grn_linear_model.pdf</code></a>): learn which genes predict which across normal cells, giving an N × N "edge matrix", then lower one gene and let the change ripple through the edges.</p>
+<p><strong>What was built.</strong> A cross-validated regression for every gene against all others, with SHAP to rank regulators, then a fast version that fits all 11,000 genes in one matrix solve (about 100,000× faster than a gene-by-gene loop).</p>
+<p><strong>The test.</strong> For each of H1's 147 usable knockdowns, compare the simulated change with the real one.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Pearson with the real change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Network simulation</td>
+<td>0.00</td>
+</tr>
+<tr>
+<td>Plain co-expression</td>
+<td>0.00</td>
+</tr>
+<tr>
+<td>"Every knockdown does what the average knockdown does"</td>
+<td><strong>0.19</strong></td>
+</tr>
+<tr>
+<td>Smoothed (metacell) network</td>
+<td>−0.005</td>
+</tr>
+</tbody>
+</table></div>
+<aside class="say"><span class="say-k">Takeaway.</span> How genes co-vary in normal cells is not the route a knockdown's effect follows. This matches a broad benchmark of network-based forecasting methods <span class="cite">[<a href="#ref-Kernfeld2025">Kernfeld2025</a>]</span> and the finding that simple baselines are hard to beat on perturbation prediction <span class="cite">[<a href="#ref-AhlmannEltze2025">AhlmannEltze2025</a>]</span>. The useful leftover: an <strong>oracle</strong> test showed that if we knew which other knockdowns a gene resembles, borrowing their effects would reach 0.46. So the job is to learn gene similarity from somewhere else.</aside>
+<h2 id="4-how-the-challenge-scores-and-why-the-a">4. How the challenge scores, and why the average fails it</h2>
+<p>Arc scores with its open-source <code>cell-eval</code> package <span class="cite">[<a href="#ref-celleval">cell-eval</a>]</span>. Three numbers matter here.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>What it asks</th>
+<th>Better</th>
+<th>Chance / baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>overlap_at_N</strong></td>
+<td>Run a differential-expression test (FDR &lt; 0.05) on real and on predicted cells. Of the real top-N changed genes, how many are also in our top N?</td>
+<td>Higher</td>
+<td>0.146 for the repo's control-mean baseline</td>
+</tr>
+<tr>
+<td><strong>discrimination_score_l1</strong></td>
+<td>Rank all real knockdown effects by L1 distance to our predicted effect (target gene excluded). Score = 1 − rank / number of knockdowns: 1.0 = own knockdown ranked first, 0.5 = random</td>
+<td>Higher</td>
+<td>~0.52</td>
+</tr>
+<tr>
+<td><strong>mae</strong></td>
+<td>Average absolute error of predicted vs real mean expression per gene</td>
+<td>Lower</td>
+<td>0.049 for unchanged controls</td>
+</tr>
+</tbody>
+</table></div>
+<p>The leaderboard score rescales each metric against a baseline (0 = baseline, 1 = perfect, clipped at 0) and averages the three <span class="cite">[<a href="#ref-celleval">cell-eval</a>]</span>. Arc's 2025 wrap-up noted that almost all entries scored worse than baseline on MAE, and that discrimination rises with the size of predicted effects <span class="cite">[<a href="#ref-ArcWrapUp2025">ArcWrapUp2025</a>]</span>.</p>
+<aside class="say"><span class="say-k">Key point.</span> The average-knockdown prediction wins on correlation but is identical for every knockdown, so it cannot tell them apart: discrimination stays at chance (0.52). To score, a prediction must be <em>specific</em> to each gene.</aside>
+<h2 id="5-round-3-borrow-effects-from-genes-that">5. Round 3: borrow effects from genes that behave alike in public screens</h2>
+<p><strong>The data.</strong> Public Perturb-seq screens: Replogle et al. 2022 genome-wide K562 (a leukaemia line, ~10,000 knockdowns) and RPE1 (retinal epithelium) <span class="cite">[<a href="#ref-Replogle2022">Replogle2022</a>]</span>; Nadig et al. 2025 HepG2 (liver) and Jurkat (T cell) <span class="cite">[<a href="#ref-Nadig2025">Nadig2025</a>]</span>.</p>
+<p><strong>The method, in four steps.</strong>
+1. In the screens, describe each gene by its knockdown profile: how every other gene moves when it is knocked down.
+2. Two genes are <strong>similar</strong> if their profiles correlate.
+3. To predict a held-out H1 knockdown, take the 10 most similar <em>other</em> H1 knockdowns and average their real H1 effects, weighted by similarity. Blend 50/50 with the average knockdown.
+4. For the challenge scorer, <strong>amplify</strong> the knockdown-specific part: prediction = average + C × (similarity-based − average). C = 8 worked best.</p>
+<p><strong>Why amplify?</strong> Averaging ten neighbours and blending with the mean produces a cautious, washed-out prediction. The scorer rewards a confident, distinct change per knockdown. Amplifying undoes the washing-out. This is a calibration step, akin to temperature scaling in ML <span class="cite">[<a href="#ref-Guo2017">Guo2017</a>]</span>.</p>
+<p><strong>Results on H1.</strong> Correlation (147 knockdowns, leave-one-out):</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Pearson</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Average knockdown</td>
+<td>0.189</td>
+</tr>
+<tr>
+<td>K562 similarity</td>
+<td>0.243</td>
+</tr>
+<tr>
+<td>All four screens</td>
+<td><strong>0.249</strong></td>
+</tr>
+<tr>
+<td>Oracle similarity</td>
+<td>0.461</td>
+</tr>
+</tbody>
+</table></div>
+<p>Better on 77 of 133 covered knockdowns (Wilcoxon p = 4 × 10⁻⁴).</p>
+<p>Official scorer (40 H1 knockdowns, 400 cells each):</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>overlap_at_N ↑</th>
+<th>discrimination ↑</th>
+<th>mae ↓</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Control mean (repo baseline)</td>
+<td>0.146</td>
+<td>0.520</td>
+<td>0.140</td>
+</tr>
+<tr>
+<td>Average knockdown</td>
+<td>0.044</td>
+<td>0.521</td>
+<td>0.049</td>
+</tr>
+<tr>
+<td>Average knockdown ×8</td>
+<td>0.203</td>
+<td>0.509</td>
+<td>0.067</td>
+</tr>
+<tr>
+<td>Screen similarity ×4</td>
+<td>0.190</td>
+<td>0.628</td>
+<td>0.050</td>
+</tr>
+<tr>
+<td><strong>Screen similarity ×8</strong></td>
+<td><strong>0.238</strong></td>
+<td><strong>0.661</strong></td>
+<td>0.069</td>
+</tr>
+<tr>
+<td>Oracle (true effect)</td>
+<td>0.548</td>
+<td>0.904</td>
+<td>0.031</td>
+</tr>
+</tbody>
+</table></div>
+<figure class="fig"><div class="tw"><svg viewBox="0 0 680 252" role="img" aria-label="cell-eval discrimination and overlap by method on 40 H1 knockdowns" class="chart"><text x="200.0" y="16" class="ch-h">Discrimination (0.5 = chance)</text><line x1="234.2" x2="234.2" y1="32" y2="218" class="ch-grid"/><text x="234.2" y="234" class="ch-t" text-anchor="middle">0.5</text><line x1="319.6" x2="319.6" y1="32" y2="218" class="ch-grid"/><text x="319.6" y="234" class="ch-t" text-anchor="middle">0.75</text><line x1="405.0" x2="405.0" y1="32" y2="218" class="ch-grid"/><text x="405.0" y="234" class="ch-t" text-anchor="middle">1</text><rect x="200.0" y="40" width="41.0" height="16" rx="2" class="bar-base"/><text x="245.0" y="52" class="ch-v">0.520</text><rect x="200.0" y="66" width="41.3" height="16" rx="2" class="bar-base"/><text x="245.3" y="78" class="ch-v">0.521</text><rect x="200.0" y="92" width="37.2" height="16" rx="2" class="bar-base"/><text x="241.2" y="104" class="ch-v">0.509</text><rect x="200.0" y="118" width="48.9" height="16" rx="2" class="bar-null"/><text x="252.9" y="130" class="ch-v">0.543</text><rect x="200.0" y="144" width="77.9" height="16" rx="2" class="bar-ours"/><text x="281.9" y="156" class="ch-v">0.628</text><rect x="200.0" y="170" width="89.2" height="16" rx="2" class="bar-ours"/><text x="293.2" y="182" class="ch-v">0.661</text><rect x="200.0" y="196" width="172.2" height="16" rx="2" class="bar-oracle"/><text x="376.2" y="208" class="ch-v">0.904</text><line x1="241.0" x2="241.0" y1="32" y2="218" class="ch-chance"/><text x="425.0" y="16" class="ch-h">overlap_at_N</text><line x1="425.0" x2="425.0" y1="32" y2="218" class="ch-grid"/><text x="425.0" y="234" class="ch-t" text-anchor="middle">0</text><line x1="493.3" x2="493.3" y1="32" y2="218" class="ch-grid"/><text x="493.3" y="234" class="ch-t" text-anchor="middle">0.2</text><line x1="561.7" x2="561.7" y1="32" y2="218" class="ch-grid"/><text x="561.7" y="234" class="ch-t" text-anchor="middle">0.4</text><line x1="630.0" x2="630.0" y1="32" y2="218" class="ch-grid"/><text x="630.0" y="234" class="ch-t" text-anchor="middle">0.6</text><rect x="425.0" y="40" width="49.9" height="16" rx="2" class="bar-base"/><text x="478.9" y="52" class="ch-v">0.146</text><rect x="425.0" y="66" width="15.0" height="16" rx="2" class="bar-base"/><text x="444.0" y="78" class="ch-v">0.044</text><rect x="425.0" y="92" width="69.4" height="16" rx="2" class="bar-base"/><text x="498.4" y="104" class="ch-v">0.203</text><rect x="425.0" y="118" width="55.7" height="16" rx="2" class="bar-null"/><text x="484.7" y="130" class="ch-v">0.163</text><rect x="425.0" y="144" width="64.9" height="16" rx="2" class="bar-ours"/><text x="493.9" y="156" class="ch-v">0.190</text><rect x="425.0" y="170" width="81.3" height="16" rx="2" class="bar-ours"/><text x="510.3" y="182" class="ch-v">0.238</text><rect x="425.0" y="196" width="187.2" height="16" rx="2" class="bar-oracle"/><text x="616.2" y="208" class="ch-v">0.548</text><text x="190" y="52" text-anchor="end" class="ch-l">Control mean (baseline)</text><text x="190" y="78" text-anchor="end" class="ch-l">Average knockdown</text><text x="190" y="104" text-anchor="end" class="ch-l">Average knockdown ×8</text><text x="190" y="130" text-anchor="end" class="ch-l">Shuffled null ×8</text><text x="190" y="156" text-anchor="end" class="ch-l">Screen similarity ×4</text><text x="190" y="182" text-anchor="end" class="ch-l ch-strong">Screen similarity ×8</text><text x="190" y="208" text-anchor="end" class="ch-l">Oracle (true effect)</text></svg></div><figcaption>Arc cell-eval on 40 real H1 knockdowns, 400 cells each. Blue: our method. Orange: the shuffled null. Grey: baselines. Dashed line: chance discrimination.</figcaption></figure><h2 id="6-the-null-control-is-the-gain-from-the-">6. The null control: is the gain from the screens or from amplifying?</h2>
+<p><strong>The test.</strong> Give each knockdown <em>another</em> knockdown's similarity-based specific part, amplified the same 8×. Same magnitude, wrong gene.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th></th>
+<th>overlap</th>
+<th>discrimination</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Screen similarity ×8</td>
+<td>0.238</td>
+<td>0.661</td>
+</tr>
+<tr>
+<td>Shuffled ×8 (null)</td>
+<td>0.163</td>
+<td>0.543</td>
+</tr>
+<tr>
+<td>Average ×8 (no gene info)</td>
+<td>0.203</td>
+<td>0.509</td>
+</tr>
+</tbody>
+</table></div>
+<aside class="say"><span class="say-k">Takeaway.</span> Amplifying anything raises overlap a little, because larger changes push more genes past the significance test. Only the right gene's screen information raises discrimination. That is the evidence the method is learning something real.</aside>
+<h2 id="7-noise-check-are-the-gains-real">7. Noise check: are the gains real?</h2>
+<p>We re-ran everything with error bars (see "Noise checks" in <a href="https://github.com/KunaalAgarwal/virtual_cell_notebooks/blob/main/models/public_screens/RESULTS.md"><code>models/public_screens/RESULTS.md</code></a>). 95% confidence intervals come from bootstrapping over knockdowns <span class="cite">[<a href="#ref-Efron1979">Efron1979</a>]</span>.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pearson gain over the average knockdown (147 knockdowns)</td>
+<td>+0.060, CI +0.036 to +0.086</td>
+</tr>
+<tr>
+<td>Settings tuned on half the knockdowns, scored on the other half (2,000 splits)</td>
+<td>0.244 vs 0.188; better in every split</td>
+</tr>
+<tr>
+<td>cell-eval ×8 minus control-mean baseline (40 knockdowns)</td>
+<td>overlap +0.092 (CI +0.042 to +0.141); discrimination +0.141 (CI +0.059 to +0.229); mae 0.071 lower</td>
+</tr>
+<tr>
+<td>cell-eval ×8 minus shuffled null ×8</td>
+<td>overlap +0.075 (CI +0.033 to +0.120); discrimination +0.118 (CI +0.027 to +0.211)</td>
+</tr>
+<tr>
+<td>Amplification tuned on 20 knockdowns, scored on the other 20</td>
+<td>overlap 0.260 vs 0.147, discrimination 0.648 vs 0.519; beats the baseline in 99.8% of splits</td>
+</tr>
+<tr>
+<td>×4 minus control-mean baseline</td>
+<td>overlap +0.043 (CI −0.024 to +0.110, <strong>not significant</strong>); discrimination +0.108 (CI +0.039 to +0.184)</td>
+</tr>
+<tr>
+<td>Three random seeds</td>
+<td>×8 overlap 0.236–0.241, discrimination 0.658–0.661</td>
+</tr>
+<tr>
+<td>Chance discrimination with 40 knockdowns</td>
+<td>anywhere from about 0.41 to 0.59</td>
+</tr>
+<tr>
+<td>How noisy is the truth? Correlation of each knockdown's effect between two halves of its cells</td>
+<td>median 0.58; 8 of 40 knockdowns below 0.12, which no method can predict</td>
+</tr>
+</tbody>
+</table></div>
+<aside class="say"><span class="say-k">Takeaway.</span> The ×8 result holds up: it beats both the baseline and the shuffled null beyond noise, and tuning C on held-out knockdowns gives the same answer, so we did not fool ourselves by tuning on the test set <span class="cite">[<a href="#ref-VarmaSimon2006">VarmaSimon2006</a>; <a href="#ref-CawleyTalbot2010">CawleyTalbot2010</a>]</span>. Two cautions. First, ×4's overlap gain is within noise; only its discrimination gain is solid. Second, with 40 knockdowns, chance discrimination can land anywhere between 0.41 and 0.59, so the null's 0.54 is chance, and differences of a few hundredths between methods mean nothing. The truth itself is noisy: a fifth of the H1 knockdowns barely change anything measurable, which caps any method well below the oracle.</aside>
+<h2 id="8-what-changes-for-2026">8. What changes for 2026</h2>
+<p>Three facts, checked against the 2026 validation files:</p>
+<ul>
+<li><strong>Only 13 of the 300 targets were knocked down in H1.</strong> We cannot copy a target's own H1 effect; similarity-based borrowing is the route.</li>
+<li><strong>272 of 300 targets are in the K562 genome-wide screen, and none in RPE1, HepG2 or Jurkat.</strong> Similarity will come from one screen.</li>
+<li><strong>55% of those K562 knockdowns had a significant effect</strong> (Replogle's energy test). The rest look weak, so one global amplification will over-predict them.</li>
+</ul>
+<p>Nadig et al. found knockdown effects only moderately consistent across four cell lines (in their preprint, average correlation ~0.62; K562 vs RPE1 ~0.40) <span class="cite">[<a href="#ref-Nadig2025">Nadig2025</a>]</span>, so some signal will be lost in transfer.</p>
+<p>And the main untested step: on H1 we borrowed <em>within</em> one cell line. In 2026 we borrow <em>across</em> cell lines, from H1 and K562 into A, B and C. That transfer has not been validated yet.</p>
+<h2 id="9-proposed-improvements-details-and-full">9. Proposed improvements (details and full citations in <a href="https://github.com/KunaalAgarwal/virtual_cell_notebooks/blob/main/docs/IMPROVEMENTS_AUDIT.md"><code>IMPROVEMENTS_AUDIT.md</code></a>)</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Idea</th>
+<th>In plain words</th>
+<th>Grounded in</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Cross-line validation</td>
+<td>Test as the challenge does: hide a whole cell line (HepG2 or Jurkat), predict it from H1 + K562</td>
+<td>Roohani 2025; Adduri 2025; Ahlmann-Eltze 2025</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Nested tuning + error bars (done on H1, keep doing)</td>
+<td>Pick settings on some knockdowns, score on others; bootstrap CIs</td>
+<td>Varma &amp; Simon 2006; Cawley &amp; Talbot 2010; Efron 1979</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Per-knockdown effect size</td>
+<td>Amplify strong knockdowns more, weak ones less (empirical-Bayes shrinkage)</td>
+<td>James &amp; Stein 1961; Efron &amp; Morris 1975; Stephens 2017; Zhu 2019; Love 2014; Mejia 2025</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Better gene similarity</td>
+<td>Compare genes in a denoised low-rank space; use GO/STRING/GenePT where screens are silent; fuse sources</td>
+<td>Ahlmann-Eltze 2025; Littman 2025 (PRESAGE); Roohani 2024 (GEARS); Szklarczyk 2023; Chen &amp; Zou 2025; Wang 2014</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Shared + specific split across lines</td>
+<td>Model each effect as a context-wide response plus a gene-specific part; adapt each separately</td>
+<td>Daumé 2007; Ben-David 2010; Sun 2016; Lotfollahi 2019 (scGen)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Context rescaling and gating</td>
+<td>Don't predict changes for genes silent in the context; scale by expression</td>
+<td>Hafemeister &amp; Satija 2019; Svensson 2020</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Realistic cells</td>
+<td>Count noise and partial knockdowns so the DE test behaves like real data</td>
+<td>Svensson 2020; Love 2014; Horlbeck 2016; Replogle 2022</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Arc's State model</td>
+<td>Run the published model zero-shot as a baseline and ensemble member</td>
+<td>Adduri 2025 (Cell 2026)</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Ensembles / stacking</td>
+<td>Combine several predictors with weights fit on held-out knockdowns</td>
+<td>Wolpert 1992; Breiman 1996; Lakshminarayanan 2017</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Honest metrics</td>
+<td>Always report the null, mean-removed Pearson and systematic-variation checks</td>
+<td>Viñas Torné 2025 (Systema); Arc 2025 wrap-up; Marrakchi 2026; Csendes 2025</td>
+</tr>
+</tbody>
+</table></div>
+<p>Recommended order: 1 first (2 is now done on H1), then 3 and 6, then 4, 5 and 9, with 7 and 8 in parallel.</p>
+<h2 id="glossary">Glossary</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Plain meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Knockdown / CRISPRi</td>
+<td>Switching one gene down on purpose with a guide RNA</td>
+</tr>
+<tr>
+<td>Control (non-targeting) cell</td>
+<td>Same procedure, guide hits nothing</td>
+</tr>
+<tr>
+<td>Effect</td>
+<td>How every gene changes when one gene is knocked down</td>
+</tr>
+<tr>
+<td>Pseudobulk</td>
+<td>Averaging many cells into one profile</td>
+</tr>
+<tr>
+<td>Perturb-seq / screen</td>
+<td>Thousands of knockdowns read out by single-cell RNA-seq in one experiment</td>
+</tr>
+<tr>
+<td>Context</td>
+<td>A cell line (A, B, C in 2026; H1, K562 etc. elsewhere)</td>
+</tr>
+<tr>
+<td>Zero-shot</td>
+<td>Predicting for a context without any knockdown data from it</td>
+</tr>
+<tr>
+<td>GRN / edge matrix</td>
+<td>A table of "gene A influences gene B"</td>
+</tr>
+<tr>
+<td>Pearson r</td>
+<td>Correlation from −1 to 1; 0 = no relationship</td>
+</tr>
+<tr>
+<td>Average knockdown / mean effect</td>
+<td>The average change over many knockdowns; the same prediction for every gene</td>
+</tr>
+<tr>
+<td>Similarity</td>
+<td>How alike two genes' knockdown profiles are in a public screen</td>
+</tr>
+<tr>
+<td>Amplification C</td>
+<td>How many times the gene-specific part of a prediction is scaled up</td>
+</tr>
+<tr>
+<td>Null control</td>
+<td>The same pipeline with the gene information scrambled</td>
+</tr>
+<tr>
+<td>Oracle</td>
+<td>A cheat that uses the true answer, showing the ceiling</td>
+</tr>
+<tr>
+<td>cell-eval</td>
+<td>Arc's official scorer</td>
+</tr>
+<tr>
+<td>overlap_at_N</td>
+<td>Share of truly changed genes we also flag as changed</td>
+</tr>
+<tr>
+<td>discrimination_score_l1</td>
+<td>How often our prediction is closest to its own knockdown (0.5 = chance)</td>
+</tr>
+<tr>
+<td>mae</td>
+<td>Average absolute error</td>
+</tr>
+<tr>
+<td>Shrinkage / empirical Bayes</td>
+<td>Pulling noisy estimates toward a shared value, more for noisier ones</td>
+</tr>
+<tr>
+<td>Domain adaptation</td>
+<td>Transferring a model from one setting (cell line) to another</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="questions">Questions</h2>
+<ul>
+<li><strong>"Is 0.66 discrimination good?"</strong> It is well above chance (0.52) and the control-mean baseline, but far from the oracle (0.90). It shows the signal is real; most of the gap is still open.</li>
+<li><strong>"Did you tune on the test set?"</strong> Originally yes. The noise check (section 7) re-tuned C on 20 knockdowns and scored on the other 20: overlap 0.260 and discrimination 0.648 held out, beating the baseline in 99.8% of splits.</li>
+<li><strong>"Couldn't amplification alone explain it?"</strong> No: the shuffled null uses the same amplification and stays near chance on discrimination.</li>
+<li><strong>"Why not just use a big foundation model?"</strong> Published benchmarks found scGPT-type models do not yet beat simple linear baselines on this task <span class="cite">[<a href="#ref-AhlmannEltze2025">AhlmannEltze2025</a>; <a href="#ref-Csendes2025">Csendes2025</a>]</span>. We plan to run Arc's State model <span class="cite">[<a href="#ref-Adduri2025">Adduri2025</a>]</span> as a comparison.</li>
+<li><strong>"Will H1 results hold in A, B, C?"</strong> Unknown. H1 tested borrowing within one cell line. Idea 1 builds a cross-line test using HepG2 and Jurkat before we trust any 2026 number.</li>
+<li><strong>"Whose work is this built on?"</strong> Replogle et al. and Nadig et al. for the screens; Arc for the challenge, the scorer and State; Ahlmann-Eltze, Huber and Anders for showing simple linear models with screen-derived gene embeddings are strong. The references list credits everyone.</li>
+</ul>
+
+<h2 id="references">References</h2>
+<p>The same list as in <a href="https://github.com/KunaalAgarwal/virtual_cell_notebooks/blob/main/docs/IMPROVEMENTS_AUDIT.md"><code>IMPROVEMENTS_AUDIT.md</code></a>. Bracketed keys in the text point here.</p>
+<p>Bibliographic details were checked against Crossref, Europe PMC, publisher pages or proceedings sites on 2026-10-13. "Online" gives the first online date where it differs from the issue year.</p>
+<h3>Perturbation data and the challenge</h3>
+<ul>
+<li><span class="refkey" id="ref-Replogle2022">Replogle2022</span> Replogle JM, Saunders RA, Pogson AN, et al. Mapping information-rich genotype-phenotype landscapes with genome-scale Perturb-seq. <em>Cell</em> 185(14):2559–2575.e28 (2022). <a href="https://doi.org/10.1016/j.cell.2022.05.013" target="_blank" rel="noopener">https://doi.org/10.1016/j.cell.2022.05.013</a> — the K562 genome-wide and RPE1 screens we use for gene similarity.</li>
+<li><span class="refkey" id="ref-Nadig2025">Nadig2025</span> Nadig A, Replogle JM, Pogson AN, et al. Transcriptome-wide analysis of differential expression in perturbation atlases. <em>Nature Genetics</em> 57(5):1228–1237 (2025). <a href="https://doi.org/10.1038/s41588-025-02169-3" target="_blank" rel="noopener">https://doi.org/10.1038/s41588-025-02169-3</a>. Preprint: Transcriptome-wide characterization of genetic perturbations, bioRxiv (2024), <a href="https://doi.org/10.1101/2024.07.03.601903" target="_blank" rel="noopener">https://doi.org/10.1101/2024.07.03.601903</a> — the HepG2 and Jurkat screens; cross-cell-line consistency figures quoted above come from the preprint.</li>
+<li><span class="refkey" id="ref-Roohani2025">Roohani2025</span> Roohani YH, Hua TJ, Tung PY, et al. Virtual Cell Challenge: Toward a Turing test for the virtual cell. <em>Cell</em> 188(13):3370–3374 (2025). <a href="https://doi.org/10.1016/j.cell.2025.06.008" target="_blank" rel="noopener">https://doi.org/10.1016/j.cell.2025.06.008</a></li>
+<li><span class="refkey" id="ref-Adduri2025">Adduri2025</span> Adduri AK, Gautam D, Bevilacqua B, et al. Predicting cellular responses to perturbation across diverse contexts with State. <em>Cell</em> 189(19):5914–5931.e20 (2026). <a href="https://doi.org/10.1016/j.cell.2026.07.052" target="_blank" rel="noopener">https://doi.org/10.1016/j.cell.2026.07.052</a>. Preprint: bioRxiv (2025), <a href="https://doi.org/10.1101/2025.06.26.661135" target="_blank" rel="noopener">https://doi.org/10.1101/2025.06.26.661135</a> — the State model; also introduces cell-eval.</li>
+<li><span class="refkey" id="ref-celleval">cell-eval</span> Arc Institute. cell-eval: evaluation suite for perturbation prediction. <a href="https://github.com/ArcInstitute/cell-eval" target="_blank" rel="noopener">https://github.com/ArcInstitute/cell-eval</a> (checked at commit 6928cf8). Cite via [Adduri2025], as the repository asks.</li>
+<li><span class="refkey" id="ref-ArcWrapUp2025">ArcWrapUp2025</span> Arc Institute. Virtual Cell Challenge 2025 Wrap-Up: Winners and Reflections (6 Dec 2025). <a href="https://arcinstitute.org/news/virtual-cell-challenge-2025-wrap-up" target="_blank" rel="noopener">https://arcinstitute.org/news/virtual-cell-challenge-2025-wrap-up</a></li>
+</ul>
+<h3>Perturbation-prediction models and benchmarks</h3>
+<ul>
+<li><span class="refkey" id="ref-AhlmannEltze2025">AhlmannEltze2025</span> Ahlmann-Eltze C, Huber W, Anders S. Deep-learning-based gene perturbation effect prediction does not yet outperform simple linear baselines. <em>Nature Methods</em> 22(8):1657–1661 (2025). <a href="https://doi.org/10.1038/s41592-025-02772-6" target="_blank" rel="noopener">https://doi.org/10.1038/s41592-025-02772-6</a>. Preprint: <a href="https://doi.org/10.1101/2024.09.16.613342" target="_blank" rel="noopener">https://doi.org/10.1101/2024.09.16.613342</a></li>
+<li><span class="refkey" id="ref-Roohani2024">Roohani2024</span> Roohani Y, Huang K, Leskovec J. Predicting transcriptional outcomes of novel multigene perturbations with GEARS. <em>Nature Biotechnology</em> 42(6):927–935 (2024; online 2023). <a href="https://doi.org/10.1038/s41587-023-01905-6" target="_blank" rel="noopener">https://doi.org/10.1038/s41587-023-01905-6</a></li>
+<li><span class="refkey" id="ref-Cui2024">Cui2024</span> Cui H, Wang C, Maan H, et al. scGPT: toward building a foundation model for single-cell multi-omics using generative AI. <em>Nature Methods</em> 21(8):1470–1480 (2024). <a href="https://doi.org/10.1038/s41592-024-02201-0" target="_blank" rel="noopener">https://doi.org/10.1038/s41592-024-02201-0</a></li>
+<li><span class="refkey" id="ref-Theodoris2023">Theodoris2023</span> Theodoris CV, Xiao L, Chopra A, et al. Transfer learning enables predictions in network biology. <em>Nature</em> 618(7965):616–624 (2023). <a href="https://doi.org/10.1038/s41586-023-06139-9" target="_blank" rel="noopener">https://doi.org/10.1038/s41586-023-06139-9</a> — Geneformer.</li>
+<li><span class="refkey" id="ref-Lotfollahi2019">Lotfollahi2019</span> Lotfollahi M, Wolf FA, Theis FJ. scGen predicts single-cell perturbation responses. <em>Nature Methods</em> 16(8):715–721 (2019). <a href="https://doi.org/10.1038/s41592-019-0494-8" target="_blank" rel="noopener">https://doi.org/10.1038/s41592-019-0494-8</a></li>
+<li><span class="refkey" id="ref-Lotfollahi2023">Lotfollahi2023</span> Lotfollahi M, Klimovskaia Susmelj A, De Donno C, et al. Predicting cellular responses to complex perturbations in high-throughput screens. <em>Molecular Systems Biology</em> 19(6):e11517 (2023). <a href="https://doi.org/10.15252/msb.202211517" target="_blank" rel="noopener">https://doi.org/10.15252/msb.202211517</a> — CPA.</li>
+<li><span class="refkey" id="ref-Bunne2023">Bunne2023</span> Bunne C, Stark SG, Gut G, et al. Learning single-cell perturbation responses using neural optimal transport. <em>Nature Methods</em> 20(11):1759–1768 (2023). <a href="https://doi.org/10.1038/s41592-023-01969-x" target="_blank" rel="noopener">https://doi.org/10.1038/s41592-023-01969-x</a> — CellOT.</li>
+<li><span class="refkey" id="ref-Littman2025">Littman2025</span> Littman R, Levine J, Maleki S, et al. Gene-embedding-based prediction and functional evaluation of perturbation expression responses with PRESAGE. bioRxiv (2025). <a href="https://doi.org/10.1101/2025.06.03.657653" target="_blank" rel="noopener">https://doi.org/10.1101/2025.06.03.657653</a></li>
+<li><span class="refkey" id="ref-Kernfeld2025">Kernfeld2025</span> Kernfeld E, Yang Y, Weinstock JS, Battle A, Cahan P. A comparison of computational methods for expression forecasting. <em>Genome Biology</em> 26:388 (2025). <a href="https://doi.org/10.1186/s13059-025-03840-y" target="_blank" rel="noopener">https://doi.org/10.1186/s13059-025-03840-y</a></li>
+<li><span class="refkey" id="ref-Csendes2025">Csendes2025</span> Csendes G, Sanz G, Szalay KZ, Szalai B. Benchmarking foundation cell models for post-perturbation RNA-seq prediction. <em>BMC Genomics</em> 26:393 (2025). <a href="https://doi.org/10.1186/s12864-025-11600-2" target="_blank" rel="noopener">https://doi.org/10.1186/s12864-025-11600-2</a></li>
+<li><span class="refkey" id="ref-Wu2025">Wu2025</span> Wu Y, Wershof E, Schmon SM, et al. PerturBench: Benchmarking machine learning models for cellular perturbation analysis. <em>NeurIPS 38</em> (2025), pp. 106937–106977. <a href="https://arxiv.org/abs/2408.10609" target="_blank" rel="noopener">https://arxiv.org/abs/2408.10609</a></li>
+<li><span class="refkey" id="ref-VinasTorne2025">VinasTorne2025</span> Viñas Torné R, Wiatrak M, Piran Z, et al. Systema: a framework for evaluating genetic perturbation response prediction beyond systematic variation. <em>Nature Biotechnology</em> 44(6):1050–1059 (2026; online 2025). <a href="https://doi.org/10.1038/s41587-025-02777-8" target="_blank" rel="noopener">https://doi.org/10.1038/s41587-025-02777-8</a></li>
+<li><span class="refkey" id="ref-Mejia2025">Mejia2025</span> Mejia GM, Miller HE, Leblanc FJA, et al. Diversity by design: addressing mode collapse improves scRNA-seq perturbation modeling on well-calibrated metrics. arXiv:2506.22641 (2025). <a href="https://arxiv.org/abs/2506.22641" target="_blank" rel="noopener">https://arxiv.org/abs/2506.22641</a></li>
+<li><span class="refkey" id="ref-Marrakchi2026">Marrakchi2026</span> Marrakchi Y, D'Ascenzo D, Cultrera di Montesano S. Score distributions, not cells: evaluating single-cell perturbations under class overlap. arXiv:2607.04595 (2026). <a href="https://arxiv.org/abs/2607.04595" target="_blank" rel="noopener">https://arxiv.org/abs/2607.04595</a></li>
+</ul>
+<h3>Gene knowledge and embeddings</h3>
+<ul>
+<li><span class="refkey" id="ref-Szklarczyk2023">Szklarczyk2023</span> Szklarczyk D, Kirsch R, Koutrouli M, et al. The STRING database in 2023: protein–protein association networks and functional enrichment analyses for any sequenced genome of interest. <em>Nucleic Acids Research</em> 51(D1):D638–D646 (2023). <a href="https://doi.org/10.1093/nar/gkac1000" target="_blank" rel="noopener">https://doi.org/10.1093/nar/gkac1000</a></li>
+<li><span class="refkey" id="ref-ChenZou2025">ChenZou2025</span> Chen Y, Zou J. Simple and effective embedding model for single-cell biology built from ChatGPT. <em>Nature Biomedical Engineering</em> 9(4):483–493 (2025). <a href="https://doi.org/10.1038/s41551-024-01284-6" target="_blank" rel="noopener">https://doi.org/10.1038/s41551-024-01284-6</a>. Preprint (GenePT): <a href="https://doi.org/10.1101/2023.10.16.562533" target="_blank" rel="noopener">https://doi.org/10.1101/2023.10.16.562533</a></li>
+<li><span class="refkey" id="ref-Horlbeck2016">Horlbeck2016</span> Horlbeck MA, Gilbert LA, Villalta JE, et al. Compact and highly active next-generation libraries for CRISPR-mediated gene repression and activation. <em>eLife</em> 5:e19760 (2016). <a href="https://doi.org/10.7554/eLife.19760" target="_blank" rel="noopener">https://doi.org/10.7554/eLife.19760</a></li>
+</ul>
+<h3>Single-cell statistics</h3>
+<ul>
+<li><span class="refkey" id="ref-Love2014">Love2014</span> Love MI, Huber W, Anders S. Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2. <em>Genome Biology</em> 15(12):550 (2014). <a href="https://doi.org/10.1186/s13059-014-0550-8" target="_blank" rel="noopener">https://doi.org/10.1186/s13059-014-0550-8</a></li>
+<li><span class="refkey" id="ref-Zhu2019">Zhu2019</span> Zhu A, Ibrahim JG, Love MI. Heavy-tailed prior distributions for sequence count data: removing the noise and preserving large differences. <em>Bioinformatics</em> 35(12):2084–2092 (2019; online 2018). <a href="https://doi.org/10.1093/bioinformatics/bty895" target="_blank" rel="noopener">https://doi.org/10.1093/bioinformatics/bty895</a> — apeglm.</li>
+<li><span class="refkey" id="ref-Stephens2017">Stephens2017</span> Stephens M. False discovery rates: a new deal. <em>Biostatistics</em> 18(2):275–294 (2017). <a href="https://doi.org/10.1093/biostatistics/kxw041" target="_blank" rel="noopener">https://doi.org/10.1093/biostatistics/kxw041</a> — ashr.</li>
+<li><span class="refkey" id="ref-Hafemeister2019">Hafemeister2019</span> Hafemeister C, Satija R. Normalization and variance stabilization of single-cell RNA-seq data using regularized negative binomial regression. <em>Genome Biology</em> 20(1):296 (2019). <a href="https://doi.org/10.1186/s13059-019-1874-1" target="_blank" rel="noopener">https://doi.org/10.1186/s13059-019-1874-1</a> — sctransform.</li>
+<li><span class="refkey" id="ref-Svensson2020">Svensson2020</span> Svensson V. Droplet scRNA-seq is not zero-inflated. <em>Nature Biotechnology</em> 38(2):147–150 (2020). <a href="https://doi.org/10.1038/s41587-019-0379-5" target="_blank" rel="noopener">https://doi.org/10.1038/s41587-019-0379-5</a></li>
+<li><span class="refkey" id="ref-Wang2014">Wang2014</span> Wang B, Mezlini AM, Demir F, et al. Similarity network fusion for aggregating data types on a genomic scale. <em>Nature Methods</em> 11(3):333–337 (2014). <a href="https://doi.org/10.1038/nmeth.2810" target="_blank" rel="noopener">https://doi.org/10.1038/nmeth.2810</a></li>
+</ul>
+<h3>Statistics and machine learning</h3>
+<ul>
+<li><span class="refkey" id="ref-JamesStein1961">JamesStein1961</span> James W, Stein C. Estimation with quadratic loss. <em>Proc. Fourth Berkeley Symposium on Mathematical Statistics and Probability</em> 1:361–379 (1961). <a href="https://projecteuclid.org/euclid.bsmsp/1200512173" target="_blank" rel="noopener">https://projecteuclid.org/euclid.bsmsp/1200512173</a></li>
+<li><span class="refkey" id="ref-EfronMorris1975">EfronMorris1975</span> Efron B, Morris C. Data analysis using Stein's estimator and its generalizations. <em>JASA</em> 70(350):311–319 (1975). <a href="https://doi.org/10.1080/01621459.1975.10479864" target="_blank" rel="noopener">https://doi.org/10.1080/01621459.1975.10479864</a></li>
+<li><span class="refkey" id="ref-Efron1979">Efron1979</span> Efron B. Bootstrap methods: another look at the jackknife. <em>Annals of Statistics</em> 7(1):1–26 (1979). <a href="https://doi.org/10.1214/aos/1176344552" target="_blank" rel="noopener">https://doi.org/10.1214/aos/1176344552</a></li>
+<li><span class="refkey" id="ref-BenjaminiHochberg1995">BenjaminiHochberg1995</span> Benjamini Y, Hochberg Y. Controlling the false discovery rate: a practical and powerful approach to multiple testing. <em>JRSS-B</em> 57(1):289–300 (1995). <a href="https://doi.org/10.1111/j.2517-6161.1995.tb02031.x" target="_blank" rel="noopener">https://doi.org/10.1111/j.2517-6161.1995.tb02031.x</a></li>
+<li><span class="refkey" id="ref-VarmaSimon2006">VarmaSimon2006</span> Varma S, Simon R. Bias in error estimation when using cross-validation for model selection. <em>BMC Bioinformatics</em> 7:91 (2006). <a href="https://doi.org/10.1186/1471-2105-7-91" target="_blank" rel="noopener">https://doi.org/10.1186/1471-2105-7-91</a></li>
+<li><span class="refkey" id="ref-CawleyTalbot2010">CawleyTalbot2010</span> Cawley GC, Talbot NLC. On over-fitting in model selection and subsequent selection bias in performance evaluation. <em>JMLR</em> 11:2079–2107 (2010). <a href="https://www.jmlr.org/papers/v11/cawley10a.html" target="_blank" rel="noopener">https://www.jmlr.org/papers/v11/cawley10a.html</a></li>
+<li><span class="refkey" id="ref-Guo2017">Guo2017</span> Guo C, Pleiss G, Sun Y, Weinberger KQ. On calibration of modern neural networks. <em>ICML</em>, PMLR 70:1321–1330 (2017). <a href="https://proceedings.mlr.press/v70/guo17a.html" target="_blank" rel="noopener">https://proceedings.mlr.press/v70/guo17a.html</a></li>
+<li><span class="refkey" id="ref-CandesRecht2009">CandesRecht2009</span> Candès EJ, Recht B. Exact matrix completion via convex optimization. <em>Foundations of Computational Mathematics</em> 9(6):717–772 (2009). <a href="https://doi.org/10.1007/s10208-009-9045-5" target="_blank" rel="noopener">https://doi.org/10.1007/s10208-009-9045-5</a></li>
+<li><span class="refkey" id="ref-Wolpert1992">Wolpert1992</span> Wolpert DH. Stacked generalization. <em>Neural Networks</em> 5(2):241–259 (1992). <a href="https://doi.org/10.1016/S0893-6080(05" target="_blank" rel="noopener">https://doi.org/10.1016/S0893-6080(05</a>)80023-1</li>
+<li><span class="refkey" id="ref-Breiman1996">Breiman1996</span> Breiman L. Bagging predictors. <em>Machine Learning</em> 24(2):123–140 (1996). <a href="https://doi.org/10.1007/BF00058655" target="_blank" rel="noopener">https://doi.org/10.1007/BF00058655</a></li>
+<li><span class="refkey" id="ref-Lakshminarayanan2017">Lakshminarayanan2017</span> Lakshminarayanan B, Pritzel A, Blundell C. Simple and scalable predictive uncertainty estimation using deep ensembles. <em>NeurIPS 30</em> (2017). <a href="https://papers.nips.cc/paper_files/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html" target="_blank" rel="noopener">https://papers.nips.cc/paper_files/paper/2017/hash/9ef2ed4b7fd2c810847ffa5fa85bce38-Abstract.html</a></li>
+<li><span class="refkey" id="ref-Daume2007">Daume2007</span> Daumé III H. Frustratingly easy domain adaptation. <em>Proc. 45th ACL</em>, pp. 256–263 (2007). <a href="https://aclanthology.org/P07-1033/" target="_blank" rel="noopener">https://aclanthology.org/P07-1033/</a></li>
+<li><span class="refkey" id="ref-BenDavid2010">BenDavid2010</span> Ben-David S, Blitzer J, Crammer K, et al. A theory of learning from different domains. <em>Machine Learning</em> 79(1–2):151–175 (2010). <a href="https://doi.org/10.1007/s10994-009-5152-4" target="_blank" rel="noopener">https://doi.org/10.1007/s10994-009-5152-4</a></li>
+<li><span class="refkey" id="ref-SunFengSaenko2016">SunFengSaenko2016</span> Sun B, Feng J, Saenko K. Return of frustratingly easy domain adaptation. <em>Proc. AAAI</em> 30(1) (2016). <a href="https://doi.org/10.1609/aaai.v30i1.10306" target="_blank" rel="noopener">https://doi.org/10.1609/aaai.v30i1.10306</a> — CORAL.</li>
+</ul></main>
+</div>
+<footer>Code and detailed results: <a href="https://github.com/KunaalAgarwal/virtual_cell_notebooks/tree/main/models/public_screens">models/public_screens</a>, <a href="https://github.com/KunaalAgarwal/virtual_cell_notebooks/tree/main/models/grn_ridge">models/grn_ridge</a>. Markdown versions: <a href="https://github.com/KunaalAgarwal/virtual_cell_notebooks/blob/main/docs/research_summary.md">research_summary.md</a>, <a href="https://github.com/KunaalAgarwal/virtual_cell_notebooks/blob/main/docs/IMPROVEMENTS_AUDIT.md">IMPROVEMENTS_AUDIT.md</a>. Data credits: Replogle et al. 2022, Nadig et al. 2025, Arc Institute (H1, cell-eval, State).</footer>
+</body>
+</html>
