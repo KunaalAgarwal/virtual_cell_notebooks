@@ -1,0 +1,8 @@
+method,pearson_all,pearson_top100,sign_top50,pearson_all_strongest25%
+coexpression,0.0006,0.0042,0.5053,0.0074
+grn_h1_meta30:grn_fixed_20step,-0.005,-0.0117,0.4937,-0.0053
+grn_h1_meta30:grn_oracle_1step,-0.0044,-0.0066,0.4895,-0.0062
+grn_h1_meta30:grn_oracle_20step,-0.005,-0.0117,0.4937,-0.0053
+grn_h1_meta30:grn_oracle_3step,-0.0066,-0.0093,0.4829,-0.0087
+grn_h1_meta30:mean_effect+grn,0.048,0.1565,0.5758,0.0751
+mean_effect,0.1896,0.2752,0.6505,0.3289

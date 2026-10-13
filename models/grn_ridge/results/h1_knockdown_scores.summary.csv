@@ -1,0 +1,13 @@
+method,pearson_all,pearson_top100,sign_top50,pearson_all_strongest25%
+coexpression,0.0006,0.0042,0.5053,0.0074
+grn_h1_pc0:grn_fixed_20step,0.0004,0.0058,0.5048,0.0031
+grn_h1_pc0:grn_oracle_1step,-0.0071,-0.0002,0.5019,-0.0158
+grn_h1_pc0:grn_oracle_20step,0.0004,0.0058,0.5048,0.0031
+grn_h1_pc0:grn_oracle_3step,-0.0039,0.0011,0.5037,-0.0131
+grn_h1_pc0:mean_effect+grn,0.1822,0.2683,0.6454,0.3157
+grn_h1_pc10:grn_fixed_20step,-0.0148,-0.0201,0.4977,-0.038
+grn_h1_pc10:grn_oracle_1step,-0.0128,-0.0135,0.4935,-0.0265
+grn_h1_pc10:grn_oracle_20step,-0.0148,-0.0201,0.4977,-0.038
+grn_h1_pc10:grn_oracle_3step,-0.0151,-0.0189,0.4962,-0.0355
+grn_h1_pc10:mean_effect+grn,0.1863,0.2722,0.6483,0.3247
+mean_effect,0.1896,0.2752,0.6505,0.3289

@@ -1,0 +1,2 @@
+# Small result tables (<200 KB each); kept as plain text instead of LFS
+*.csv -filter -diff -merge text
