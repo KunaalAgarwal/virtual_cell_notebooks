@@ -2,6 +2,8 @@ Code and ideation for the [virtual cell challenge](https://virtualcellchallenge.
 
 [Background information](https://github.com/KunaalAgarwal/virtual_cell_background), [team](https://virtualcellchallenge.org/app), [CLI Guide](https://vcc-cli-wiki.virtualcellchallenge.org/). 
 
+**Research summary:** [docs/research_summary.md](docs/research_summary.md) explains what we have tried so far, what works, and the cited next steps ([full improvement audit](docs/IMPROVEMENTS_AUDIT.md); styled page: [docs/index.html](docs/index.html), ready for GitHub Pages from `/docs`).
+
 # Setup
 
 ```git clone https://github.com/KunaalAgarwal/virtual_cell_notebooks.git```
