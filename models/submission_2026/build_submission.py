@@ -48,6 +48,14 @@ PRESETS = {
     "c1_calibrated": dict(sim="corr", m=20, alpha=0.5, C=1.0, shared="h1", amp="fixed", gamma=0.5,
                           gate=0.01, w_direct=1.0, self_drop="k562"),
 }
+# "_wide" presets add the cross-line shared response (shared_response.py) on the wide_n genes
+# with the largest |score|, each moved just enough for the official DE test to call it
+# (wide_kappa control-noise units for 400 cells, at most wide_cap relative change). Leaderboard
+# 2026-10-14: c1_calibrated scored -1.26 on direction fidelity because it called ~20 genes per
+# target; fidelity divides by max(called, real DE genes), so under-calling is charged in full.
+WIDE = dict(wide_n=8000, wide_kappa=5.0, wide_cap=0.5, up_mode="depth")
+PRESETS["c1_wide"] = {**PRESETS["c1_calibrated"], **WIDE}
+PRESETS["c4_wide"] = {**PRESETS["c1_calibrated"], "C": 4.0, **WIDE}
 PARAMS = PRESETS["c8_strength"]
 FOLD_CLIP = (np.exp(-3.0), np.exp(3.0))
 SELF_FLOOR = 0.05
@@ -61,12 +69,33 @@ def context_stats(X):
     return np.asarray(L.mean(0)).ravel(), np.asarray((X > 0).mean(0)).ravel()
 
 
-def predict_folds(ctx, X, genes, targets, h1, k562, xb):
+def wide_shift(X, shared, n, kappa, cap):
+    """Signed log change that makes the official DE test (wilcoxon on CPM+log1p, 400 cells vs
+    the context's controls, per-target BH) call each of the n genes with the largest |shared|:
+    kappa standard errors of a 400-cell CPM mean, capped at a relative change of cap."""
+    lib = np.asarray(X.sum(1)).ravel()
+    N = X.multiply(1e6 / lib[:, None]).tocsr()
+    mu = np.asarray(N.mean(0)).ravel()
+    sd = np.sqrt(np.maximum(np.asarray(N.multiply(N).mean(0)).ravel() - mu ** 2, 0))
+    e = kappa * sd / np.maximum(mu, 1e-12) / np.sqrt(CELLS_PER_PERT)
+    ok = (mu >= 5.0) & (e <= cap) & (shared != 0)    # the scorer drops genes under 5 CPM
+    pick = np.argsort(-np.where(ok, np.abs(shared), -1))[:n]
+    pick = pick[ok[pick]]
+    w = np.zeros(X.shape[1], dtype=np.float32)
+    w[pick] = (np.sign(shared[pick]) * np.log1p(e[pick])).astype(np.float32)
+    return w
+
+
+def predict_folds(ctx, X, genes, targets, h1, k562, xb, shared=None):
     """Per-target fold factors (targets x genes) on the count scale, plus the log changes."""
     ctrl_mean, det = context_stats(X)
     line = dict(name=ctx, genes=np.asarray(genes), perts=list(targets), ctrl_mean=ctrl_mean, det=det)
     F = xb.build_features(line, h1, k562)
     delta = xb.predict(line, F, PARAMS)
+    if PARAMS.get("wide_n") and shared is not None:
+        w = wide_shift(X, shared, PARAMS["wide_n"], PARAMS["wide_kappa"], PARAMS["wide_cap"])
+        # keep the target-specific prediction wherever it already moves a gene at least as much
+        delta = np.where(np.abs(delta) >= np.abs(w)[None, :], delta, w[None, :]).astype(np.float32)
     fold = np.clip(np.exp(delta), *FOLD_CLIP)
     gi = {g: i for i, g in enumerate(genes)}
     fe = F["meta"]["fold_expr"].to_numpy()
@@ -77,10 +106,29 @@ def predict_folds(ctx, X, genes, targets, h1, k562, xb):
     return fold.astype(np.float32), delta, info
 
 
-def make_cells(X, fold_row, rng):
-    """400 control cells, counts scaled by fold_row with integer-preserving sampling."""
+def make_cells(X, fold_row, rng, gene_rate=None):
+    """400 control cells, counts scaled by fold_row with integer-preserving sampling.
+
+    Decreases thin each count binomially. Increases add Poisson counts with mean (f - 1) times
+    the cell's own count, or, when gene_rate (expected count per gene at average depth) is given,
+    (f - 1) times that rate scaled by the cell's depth, so cells with a zero count can gain one
+    too. A rank test (the scorer's wilcoxon) cannot see an increase of a mostly-zero gene that
+    only scales its non-zero cells; the depth-based rate makes such increases callable.
+    """
     idx = rng.choice(X.shape[0], CELLS_PER_PERT, replace=False)
     S = X[idx].tocsr()
+    if gene_rate is not None:
+        up = np.nonzero(fold_row > 1)[0]
+        lib = np.asarray(S.sum(1)).ravel()
+        rate = np.outer(lib / gene_rate["mean_lib"], gene_rate["rate"][up] * (fold_row[up] - 1.0))
+        add = sp.csr_matrix(rng.poisson(rate).astype(np.float32))
+        down = fold_row.copy()
+        down[up] = 1.0
+        S = _thin(S, down, rng)
+        A = sp.csr_matrix((add.data, up[add.indices], add.indptr), shape=S.shape)
+        S = (S + A).tocsr()
+        S.sort_indices()
+        return S
     c = S.data.astype(np.int64)
     f = fold_row[S.indices]
     down = f < 1
@@ -89,6 +137,16 @@ def make_cells(X, fold_row, rng):
     up = ~down
     out[up] = c[up] + rng.poisson(c[up] * (f[up] - 1.0))
     S.data = out.astype(np.float32)
+    S.eliminate_zeros()
+    return S
+
+
+def _thin(S, fold_row, rng):
+    """Binomially thin the counts of genes with fold < 1; other genes are left as they are."""
+    S = S.copy()
+    f = fold_row[S.indices]
+    d = f < 1
+    S.data[d] = rng.binomial(S.data[d].astype(np.int64), f[d]).astype(np.float32)
     S.eliminate_zeros()
     return S
 
@@ -130,7 +188,9 @@ def main():
     ap.add_argument("--diag", default=None, help="folder for diagnostics (log changes, per-target info)")
     ap.add_argument("--contexts", default="A,B,C")
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--preset", default="c1_calibrated", choices=list(PRESETS))
+    ap.add_argument("--preset", default="c1_wide", choices=list(PRESETS))
+    ap.add_argument("--shared", default=str(Path(__file__).with_name("data") / "shared_response.npz"),
+                    help="shared_response.npz (needed by the *_wide presets)")
     a = ap.parse_args()
     global PARAMS
     PARAMS = PRESETS[a.preset]
@@ -151,6 +211,10 @@ def main():
     D[:, have] = z["delta"][:, pos[have].astype(int)]
     h1 = dict(delta=D, perts=z["perts"].astype(str))
     k562 = xb.load_k562(a.k562)
+    shared = None
+    if PARAMS.get("wide_n"):
+        zs = np.load(a.shared, allow_pickle=True)
+        shared = pd.Series(zs["score"], index=zs["genes"].astype(str)).reindex(genes).fillna(0).to_numpy()
 
     diag = Path(a.diag) if a.diag else None
     if diag:
@@ -163,15 +227,19 @@ def main():
         w = CSRWriter(f, len(genes))
         for ctx in contexts:
             X = ad.read_h5ad(data / f"context_{ctx}.h5ad").X.tocsr()
-            fold, delta, info = predict_folds(ctx, X, genes, targets, h1, k562, xb)
+            fold, delta, info = predict_folds(ctx, X, genes, targets, h1, k562, xb, shared)
             print(f"context {ctx}: {info.in_k562.sum()} targets in K562; median genes changed >10%: "
                   f"{int(info.n_genes_changed_10pct.median())}", flush=True)
             if diag:
                 np.save(diag / f"log_change_{ctx}.npy", delta.astype(np.float32))
                 np.save(diag / f"fold_{ctx}.npy", fold)
                 info.to_csv(diag / f"targets_{ctx}.csv", index=False)
+            gene_rate = None
+            if PARAMS.get("up_mode") == "depth":
+                lib = np.asarray(X.sum(1)).ravel()
+                gene_rate = dict(rate=np.asarray(X.mean(0)).ravel(), mean_lib=lib.mean())
             for i, t in enumerate(targets):
-                w.append(make_cells(X, fold[i], rng))
+                w.append(make_cells(X, fold[i], rng, gene_rate))
                 obs_t += [t] * CELLS_PER_PERT
                 obs_c += [ctx] * CELLS_PER_PERT
             print(f"  wrote {w.rows} cells, {w.nnz:,} stored counts so far", flush=True)
