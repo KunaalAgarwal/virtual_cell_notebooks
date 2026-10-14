@@ -12,6 +12,8 @@ These are evaluation scripts on H1, not yet a `predict()` model for the 2026 con
 | `h1_pseudobulk.py` | Batch-matched H1 pseudobulk effects (150 knockdowns). Handles the support set's log1p-count file. |
 | `h1_extract_perts.py` | Pulls the 40-knockdown H1 test set for cell-eval. |
 | `h1_eval_utils.py` | Shared scoring and submission-building helpers. |
+| `xline_benchmark.py` | Leave-one-cell-line-out benchmark (HepG2/Jurkat held out, H1 + K562 as sources): per-knockdown amplitude, expression gating, low-rank similarity, K562 stacking; nested tuning across lines and paired bootstraps. |
+| `celleval_xline.py` | cell-eval on a held-out line for the settings `xline_benchmark.py` chose. |
 
 The whole pipeline, including downloads, runs in Colab via [`notebooks/public_screens_colab.ipynb`](../../notebooks/public_screens_colab.ipynb).
 
