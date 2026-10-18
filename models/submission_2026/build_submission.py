@@ -56,6 +56,20 @@ PRESETS = {
 WIDE = dict(wide_n=8000, wide_kappa=5.0, wide_cap=0.5, up_mode="depth")
 PRESETS["c1_wide"] = {**PRESETS["c1_calibrated"], **WIDE}
 PRESETS["c4_wide"] = {**PRESETS["c1_calibrated"], "C": 4.0, **WIDE}
+# Leaderboard 2026-10-18: c1_wide fixed fidelity (-1.26 -> -0.005) but the one shared sign
+# pattern on ~8,000 genes made every target's predicted change point the same way, so cosine
+# discrimination fell to exactly chance (0.500) and nmae rose (0.98 -> 1.09). "_dev" presets
+# give each target its own sign on the same genes: the sign of its predicted change minus the
+# panel-average predicted change. Fidelity only needs enough calls in better-than-random
+# directions; per-target signs keep the targets apart. On H1 (diagnostics/h1_variants.py):
+# pds 0.627 (c1) / 0.538 (c1_wide) / 0.751 (c1_dev); nmae 0.86 / 0.96 / 0.93.
+PRESETS["c1_dev"] = {**PRESETS["c1_calibrated"], **WIDE, "wide_kappa": 4.0, "wide_signs": "deviation"}
+# Top-team gap analysis (2026-10-18, README "Leaderboard 2" and diagnostics): with RPE1 as a
+# clean stand-in for a new line, the target's own K562 profile alone gives cosine discrimination
+# 0.78 on a vcc-like panel, while H1's mean response (0.78 -> 0.66) and borrowed H1 effects
+# (0.78 -> 0.72) only pull it down; x3 on the K562 profile improves lfc nmae (0.92 -> 0.78).
+# d3_dev: K562 profile x3, no H1 terms, plus the per-target wide calls of c1_dev.
+PRESETS["d3_dev"] = {**PRESETS["c1_dev"], "shared": "none", "C": 0.0, "w_direct": 3.0}
 PARAMS = PRESETS["c8_strength"]
 FOLD_CLIP = (np.exp(-3.0), np.exp(3.0))
 SELF_FLOOR = 0.05
@@ -93,9 +107,12 @@ def predict_folds(ctx, X, genes, targets, h1, k562, xb, shared=None):
     F = xb.build_features(line, h1, k562)
     delta = xb.predict(line, F, PARAMS)
     if PARAMS.get("wide_n") and shared is not None:
-        w = wide_shift(X, shared, PARAMS["wide_n"], PARAMS["wide_kappa"], PARAMS["wide_cap"])
+        w = wide_shift(X, shared, PARAMS["wide_n"], PARAMS["wide_kappa"], PARAMS["wide_cap"])[None, :]
+        if PARAMS.get("wide_signs") == "deviation":
+            dev = delta - delta.mean(0, keepdims=True)
+            w = np.abs(w) * np.where(dev >= 0, 1.0, -1.0)
         # keep the target-specific prediction wherever it already moves a gene at least as much
-        delta = np.where(np.abs(delta) >= np.abs(w)[None, :], delta, w[None, :]).astype(np.float32)
+        delta = np.where(np.abs(delta) >= np.abs(w), delta, w).astype(np.float32)
     fold = np.clip(np.exp(delta), *FOLD_CLIP)
     gi = {g: i for i, g in enumerate(genes)}
     fe = F["meta"]["fold_expr"].to_numpy()
@@ -188,7 +205,7 @@ def main():
     ap.add_argument("--diag", default=None, help="folder for diagnostics (log changes, per-target info)")
     ap.add_argument("--contexts", default="A,B,C")
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--preset", default="c1_wide", choices=list(PRESETS))
+    ap.add_argument("--preset", default="c1_dev", choices=list(PRESETS))
     ap.add_argument("--shared", default=str(Path(__file__).with_name("data") / "shared_response.npz"),
                     help="shared_response.npz (needed by the *_wide presets)")
     a = ap.parse_args()

@@ -27,7 +27,9 @@ controls' density (~2.06e9 in total).
 |---|---|---|
 | `c1_calibrated` | Round 4 "tuned for Pearson": C 1, m 20, K562 term, 1% gate | 2.0 |
 | `c8_strength` | Round 4 recommended default: C 8 x strength^2, m 10, K562 term, 1% gate | 4.8 (15x at p90) |
-| `c1_wide` (default) | `c1_calibrated` + cross-line shared response called on ~7,000-8,000 genes (see below) | per-target part 2.0 |
+| `c1_wide` | `c1_calibrated` + cross-line shared response called on ~7,000-8,000 genes (see below) | per-target part 2.0 |
+| `c1_dev` (default) | `c1_wide` genes, but each target gets its own sign (its predicted change minus the panel average), 4 SE | per-target part 2.0 |
+| `d3_dev` | the target's own K562 profile x3, no H1 terms, plus `c1_dev`'s per-target wide calls (see Leaderboard 2, "Where the top teams gain") | per-target part ~4.5 |
 | `c4_wide` | `c1_wide` with the per-target part x4 (protects pds against the common shift) | per-target part ~8 |
 
 `c8_strength` was chosen for cell-eval 0.8's L1 discrimination, which rewards large effects.
@@ -84,6 +86,71 @@ Checks (scripts in `diagnostics/`, run on the shared project data):
 Expected effect, not measured on A/B/C (the leaderboard is the only truth there): fidelity near
 or slightly above the baseline (scaled about -0.1 to +0.2 instead of -1.26), so overall around 0,
 with jaccard likely up and pds slightly down.
+
+## Leaderboard 2 (2026-10-18) and the `c1_dev` preset
+
+`c1_wide` scored overall -0.0295 (rank 1139, from -0.1945 and 1283):
+
+| metric | c1_calibrated raw / scaled | c1_wide raw / scaled |
+|---|---|---|
+| pds_cosine | 0.549 / +0.106 | **0.500 / 0.000** |
+| mse (capped norm) | 1.156 / 0.000 | 17.683 / 0.000 (clamped) |
+| sig_jaccard | 0.004 / -0.071 | 0.033 / +0.007 |
+| lfc_nmae | 0.984 / +0.028 | **1.091 / -0.152** |
+| direction_fidelity_yield_raw | 0.135 / **-1.262** | 0.511 / -0.005 |
+| direction_reach_raw | 0.107 / +0.031 | 0.055 / -0.027 |
+
+Fidelity was fixed as intended. The cell builder works as designed: the official DE test calls
+the intended direction on 99.5% of genes. The losses come from the shared sign pattern itself.
+The same ~8,000-gene shift was added to every target, and it is much larger in norm than the
+per-target part. So every predicted change pointed the same way, and cosine discrimination
+collapsed to a common ranking, which reads exactly 0.5. The shared directions were only 51%
+right in A/B/C, so the extra error on real DE genes raised nmae. The shared genes also crowd the
+top of the significance ranking, which lowers reach.
+
+`c1_dev` keeps the same genes at a slightly smaller callable size (4 SE instead of 5). Each target's sign
+on a gene is the sign of its own predicted change minus the panel-average predicted change.
+Fidelity needs only enough calls with better-than-random directions, while per-target signs keep
+the targets apart. On H1 with the same c1 machinery (`diagnostics/h1_variants.py`: pds over 136 H1
+knockdowns with K562 profiles, fidelity and nmae over the 40 with DE tables, shared response without H1):
+
+| variant | pds_cosine | fidelity raw | nmae (approx.) |
+|---|---|---|---|
+| c1_calibrated | 0.627 | 0.486 | 0.856 |
+| c1_wide (shared signs, 5 SE) | 0.531 | 0.558 | 0.969 |
+| **c1_dev** (per-target signs, 4 SE) | **0.751** | 0.569 | 0.933 |
+| per-target + 0.3 x shared, 4 SE | 0.740 | 0.574 | 0.931 |
+
+The H1 proxy reproduces both leaderboard moves of c1_wide (pds down to chance, nmae +0.11).
+With the official DE test on 12 real targets in context C, `c1_dev` gets 7,538 genes called per
+target, 99.6% in the intended direction, median |log2FC| 0.29 (c1_wide: 8,010 genes, 0.32), and
+only 42% agree with the shared sign. Expected on A/B/C, not measured: fidelity near 0 as now, pds
+back above c1's +0.11, nmae a little better than c1_wide, so overall slightly above 0.
+
+### Where the top teams gain (2026-10-18)
+
+Top-10 entries (overall 0.31-0.47) score pds 0.75-0.88 (raw 0.84-0.90), mse 0.44-0.79 (raw
+0.24-0.55), reach 0.25-0.46 and nmae 0.23-0.44, while their fidelity (0.03-0.17) and jaccard
+(about 0) sit near the baseline. With RPE1 (Replogle et al. 2022) as a clean stand-in for a new
+cell line and the K562 genome-wide screen as the source (`diagnostics/xline_pds.py`,
+`pipeline_on_rpe1.py`, `rpe1_scale.py`; lfc = log1p(z x sd / mean)):
+
+| prediction, RPE1 panel of 300 | strongest KDs | random | random, 55% K562-significant (vcc-like) |
+|---|---|---|---|
+| same gene's K562 profile only | 0.88 | 0.80 | 0.78 |
+| our c1 recipe (H1 mean + borrowed H1 + K562 profile) | 0.84 | 0.69 | 0.65 |
+| H1 mean + K562 profile | 0.86 | 0.71 | 0.66 |
+| borrowed H1 + K562 profile | 0.87 | 0.75 | 0.72 |
+
+The same gene's profile in another line reaches the top teams' pds. Both H1 terms lower it.
+Scaling the K562 profile x3 leaves pds unchanged and improves the nmae proxy from 0.92 to 0.78
+(x4: 0.75); it raises the raw mse ratio, which the leaderboard clamps at 1 for every entry above
+the baseline, ours included. The mse gains of the top teams need the context's own shared
+response: RPE1's own mean explains 43% of its response variance, but K562's mean ported over
+explains 6% (cosine 0.28), and adding any large common vector costs pds (0.88 -> 0.69-0.72 even
+with the oracle shared response). How the leaders get mse 0.24-0.55 in a line without
+perturbation data is open; private data or leaderboard tuning over many submissions would both
+do it.
 
 ## Files
 
