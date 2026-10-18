@@ -64,6 +64,12 @@ PRESETS["c4_wide"] = {**PRESETS["c1_calibrated"], "C": 4.0, **WIDE}
 # directions; per-target signs keep the targets apart. On H1 (diagnostics/h1_variants.py):
 # pds 0.627 (c1) / 0.538 (c1_wide) / 0.751 (c1_dev); nmae 0.86 / 0.96 / 0.93.
 PRESETS["c1_dev"] = {**PRESETS["c1_calibrated"], **WIDE, "wide_kappa": 4.0, "wide_signs": "deviation"}
+# Top-team gap analysis (2026-10-18, README "Leaderboard 2" and diagnostics): with RPE1 as a
+# clean stand-in for a new line, the target's own K562 profile alone gives cosine discrimination
+# 0.78 on a vcc-like panel, while H1's mean response (0.78 -> 0.66) and borrowed H1 effects
+# (0.78 -> 0.72) only pull it down; x3 on the K562 profile improves lfc nmae (0.92 -> 0.78).
+# d3_dev: K562 profile x3, no H1 terms, plus the per-target wide calls of c1_dev.
+PRESETS["d3_dev"] = {**PRESETS["c1_dev"], "shared": "none", "C": 0.0, "w_direct": 3.0}
 PARAMS = PRESETS["c8_strength"]
 FOLD_CLIP = (np.exp(-3.0), np.exp(3.0))
 SELF_FLOOR = 0.05

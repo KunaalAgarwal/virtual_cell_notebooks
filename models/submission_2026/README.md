@@ -29,6 +29,7 @@ controls' density (~2.06e9 in total).
 | `c8_strength` | Round 4 recommended default: C 8 x strength^2, m 10, K562 term, 1% gate | 4.8 (15x at p90) |
 | `c1_wide` | `c1_calibrated` + cross-line shared response called on ~7,000-8,000 genes (see below) | per-target part 2.0 |
 | `c1_dev` (default) | `c1_wide` genes, but each target gets its own sign (its predicted change minus the panel average), 4 SE | per-target part 2.0 |
+| `d3_dev` | the target's own K562 profile x3, no H1 terms, plus `c1_dev`'s per-target wide calls (see Leaderboard 2, "Where the top teams gain") | per-target part ~4.5 |
 | `c4_wide` | `c1_wide` with the per-target part x4 (protects pds against the common shift) | per-target part ~8 |
 
 `c8_strength` was chosen for cell-eval 0.8's L1 discrimination, which rewards large effects.
@@ -125,6 +126,31 @@ With the official DE test on 12 real targets in context C, `c1_dev` gets 7,538 g
 target, 99.6% in the intended direction, median |log2FC| 0.29 (c1_wide: 8,010 genes, 0.32), and
 only 42% agree with the shared sign. Expected on A/B/C, not measured: fidelity near 0 as now, pds
 back above c1's +0.11, nmae a little better than c1_wide, so overall slightly above 0.
+
+### Where the top teams gain (2026-10-18)
+
+Top-10 entries (overall 0.31-0.47) score pds 0.75-0.88 (raw 0.84-0.90), mse 0.44-0.79 (raw
+0.24-0.55), reach 0.25-0.46 and nmae 0.23-0.44, while their fidelity (0.03-0.17) and jaccard
+(about 0) sit near the baseline. With RPE1 (Replogle et al. 2022) as a clean stand-in for a new
+cell line and the K562 genome-wide screen as the source (`diagnostics/xline_pds.py`,
+`pipeline_on_rpe1.py`, `rpe1_scale.py`; lfc = log1p(z x sd / mean)):
+
+| prediction, RPE1 panel of 300 | strongest KDs | random | random, 55% K562-significant (vcc-like) |
+|---|---|---|---|
+| same gene's K562 profile only | 0.88 | 0.80 | 0.78 |
+| our c1 recipe (H1 mean + borrowed H1 + K562 profile) | 0.84 | 0.69 | 0.65 |
+| H1 mean + K562 profile | 0.86 | 0.71 | 0.66 |
+| borrowed H1 + K562 profile | 0.87 | 0.75 | 0.72 |
+
+The same gene's profile in another line reaches the top teams' pds. Both H1 terms lower it.
+Scaling the K562 profile x3 leaves pds unchanged and improves the nmae proxy from 0.92 to 0.78
+(x4: 0.75); it raises the raw mse ratio, which the leaderboard clamps at 1 for every entry above
+the baseline, ours included. The mse gains of the top teams need the context's own shared
+response: RPE1's own mean explains 43% of its response variance, but K562's mean ported over
+explains 6% (cosine 0.28), and adding any large common vector costs pds (0.88 -> 0.69-0.72 even
+with the oracle shared response). How the leaders get mse 0.24-0.55 in a line without
+perturbation data is open; private data or leaderboard tuning over many submissions would both
+do it.
 
 ## Files
 
