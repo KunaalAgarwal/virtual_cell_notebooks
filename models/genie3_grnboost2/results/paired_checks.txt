@@ -1,0 +1,12 @@
+screens+grnboost2_out        best ('screens+grnboost2_out', 40) 0.252 vs screens ('screens_shrink0.5', 10) 0.249; diff +0.003 CI [-0.007, +0.014]; held-out half gain +0.003, better in 70% of splits
+grnboost2_out                best ('grnboost2_out_shrink0.5', 40) 0.193 vs screens ('screens_shrink0.5', 10) 0.249; diff -0.056 CI [-0.082, -0.030]; held-out half gain -0.053, better in 0% of splits
+screens+grnboost2_in         best ('screens+grnboost2_in', 40) 0.214 vs screens ('screens_shrink0.5', 10) 0.249; diff -0.035 CI [-0.056, -0.014]; held-out half gain -0.034, better in 0% of splits
+grnboost2_in                 best ('grnboost2_in_shrink0.5', 40) 0.190 vs screens ('screens_shrink0.5', 10) 0.249; diff -0.059 CI [-0.087, -0.031]; held-out half gain -0.055, better in 0% of splits
+screens+genie3_out           best ('screens+genie3_out_shrink0.5', 10) 0.238 vs screens ('screens_shrink0.5', 10) 0.249; diff -0.011 CI [-0.025, +0.004]; held-out half gain -0.012, better in 8% of splits
+genie3_out                   best ('genie3_out_shrink0.5', 40) 0.193 vs screens ('screens_shrink0.5', 10) 0.249; diff -0.056 CI [-0.082, -0.029]; held-out half gain -0.053, better in 0% of splits
+screens+genie3_in            best ('screens+genie3_in_shrink0.5', 10) 0.227 vs screens ('screens_shrink0.5', 10) 0.249; diff -0.022 CI [-0.038, -0.005]; held-out half gain -0.022, better in 2% of splits
+genie3_in                    best ('genie3_in_shrink0.5', 40) 0.191 vs screens ('screens_shrink0.5', 10) 0.249; diff -0.058 CI [-0.086, -0.031]; held-out half gain -0.054, better in 0% of splits
+screens+k562gb_out           best ('screens+k562gb_out', 40) 0.239 vs screens ('screens_shrink0.5', 10) 0.249; diff -0.010 CI [-0.023, +0.003]; held-out half gain -0.008, better in 14% of splits
+k562gb_out                   best ('k562gb_out_shrink0.5', 40) 0.179 vs screens ('screens_shrink0.5', 10) 0.249; diff -0.070 CI [-0.101, -0.040]; held-out half gain -0.067, better in 0% of splits
+screens+k562gb_in            best ('screens+k562gb_in', 40) 0.226 vs screens ('screens_shrink0.5', 10) 0.249; diff -0.023 CI [-0.038, -0.007]; held-out half gain -0.023, better in 1% of splits
+k562gb_in                    best ('k562gb_in_shrink0.5', 40) 0.187 vs screens ('screens_shrink0.5', 10) 0.249; diff -0.062 CI [-0.091, -0.034]; held-out half gain -0.058, better in 0% of splits
