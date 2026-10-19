@@ -98,7 +98,7 @@ def build_features(line, h1, k562, n_pcs=50):
     # Low-rank similarity: top PCs of the whole genome-wide screen (audit idea 4.1;
     # Ahlmann-Eltze et al. 2025; Candes and Recht 2009).
     mu = Zall.mean(0)
-    _, _, Vt = np.linalg.svd(Zall[np.random.default_rng(0).choice(len(Zall), 4000, replace=False)] - mu,
+    _, _, Vt = np.linalg.svd(Zall[np.random.default_rng(0).choice(len(Zall), min(4000, len(Zall)), replace=False)] - mu,
                              full_matrices=False)
     V = Vt[:n_pcs].T
     sim["pca"] = corr_rows((zT - mu) @ V, (zS - mu) @ V)
