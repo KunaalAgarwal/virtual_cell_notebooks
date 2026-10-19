@@ -14,6 +14,21 @@ to the 300 targets of panel `vcc2026-val-1` and packages the result in the offic
   `pds_cosine` is scale-free; `expr_mse_unbiased_capped_norm` and `de_wilcoxon_lfc_nmae` penalize
   effects that are too large.
 
+## Inputs shipped in `data/`
+
+- `h1_pseudobulk.npz`: log1p(CP10k) effects of the 2025 H1 knockdowns.
+- `shared_response.npz`: cross-line shared knockdown response (see "Shared response").
+- `k562_gwps_bulk_subset.h5ad` (31 MB): the rows of Replogle et al. 2022
+  `K562_gwps_normalized_bulk_01.h5ad` (figshare article 20029387, file 35773217) that the build
+  reads: the 300 panel targets, the 2025 H1 knockdowns and the non-targeting controls (996 of
+  11,258 rows, all 8,248 readout genes). `build_submission.py` only uses those rows (correlation
+  similarity, the target's own profile, strength metadata), so predictions are bit-identical to
+  the full 375 MB file (checked on context A for `c1_dev` and `d3_dev`, max |fold difference| 0).
+  Added 2026-10-19 after figshare started answering downloads with HTTP 500 JSON error pages,
+  which `wget -q -O` saved as the .h5ad and the build then failed on with
+  "file signature not found". The Colab notebook uses this file by default and no longer downloads
+  anything from figshare; `DOWNLOAD_FULL = True` in its data cell restores the download.
+
 ## How cells are made
 
 Each predicted cell is a real control cell of the same context, with counts scaled gene by gene
