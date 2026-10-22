@@ -1,7 +1,8 @@
 """Build a Virtual Cell Challenge 2026 submission from the public-screen effect-borrowing method.
 
-For each context (A, B, C) the method of public-screens/RESULTS.md (Round 4) predicts a log
-change for every one of the 300 targets:
+For each context of the controls bundle it is given (A, B, C in the validation phase, D, E, F in
+the final phase; read from the bundle's manifest.json, see bundle.py) the method of
+public-screens/RESULTS.md (Round 4) predicts a log change for every target in pert_counts.csv:
 
   * shared response: H1's mean knockdown effect (Nadig et al. 2025 / VCC 2025 H1 data),
   * specific part: H1 effects of the m genes most similar to the target in the Replogle 2022
@@ -20,7 +21,7 @@ The combined .h5ad is written in a streaming way (CSR appended row block by row 
 whole matrix (~2e9 stored counts, ~17 GB) never sits in memory.
 
     python build_submission.py --data vcc2026-data/ --h1 h1_pseudobulk.npz \
-        --k562 K562_gwps_normalized_bulk_01.h5ad --method-dir public-screens/ --out pred.h5ad [--preset c1_calibrated]
+        --k562 K562_gwps_normalized_bulk_01.h5ad (or k562_pack.py's rebuilt copy) --method-dir public-screens/ --out pred.h5ad [--preset c1_calibrated]
 """
 
 from __future__ import annotations
@@ -35,6 +36,8 @@ import h5py
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
+
+import bundle
 
 CTRL = "non-targeting"
 CELLS_PER_PERT = 400
@@ -197,13 +200,14 @@ class CSRWriter:
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--data", required=True, help="folder with context_*.h5ad, gene_names.csv, pert_counts.csv")
+    ap.add_argument("--data", required=True,
+                    help="unzipped controls bundle: control .h5ad per context, gene_names.csv, pert_counts.csv, manifest.json")
     ap.add_argument("--h1", required=True, help="h1_pseudobulk.npz (log1p CP10k effects of 150 H1 knockdowns)")
     ap.add_argument("--k562", required=True, help="Replogle K562_gwps_normalized_bulk_01.h5ad")
     ap.add_argument("--method-dir", required=True, help="folder holding xline_benchmark.py")
     ap.add_argument("--out", required=True, help="combined prediction .h5ad")
     ap.add_argument("--diag", default=None, help="folder for diagnostics (log changes, per-target info)")
-    ap.add_argument("--contexts", default="A,B,C")
+    ap.add_argument("--contexts", default=None, help="comma-separated; default: the bundle's manifest.json")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--preset", default="c1_dev", choices=list(PRESETS))
     ap.add_argument("--shared", default=str(Path(__file__).with_name("data") / "shared_response.npz"),
@@ -216,8 +220,13 @@ def main():
 
     data = Path(a.data)
     genes = pd.read_csv(data / "gene_names.csv")["gene_name"].astype(str).tolist()
-    targets = pd.read_csv(data / "pert_counts.csv")["target_gene"].astype(str).tolist()
-    contexts = a.contexts.split(",")
+    contexts = bundle.contexts(data, a.contexts)
+    targets_by_ctx = bundle.targets(data, contexts)
+    all_targets = list(dict.fromkeys(t for c in contexts for t in targets_by_ctx[c]))
+    print(bundle.describe(data, a.contexts), flush=True)
+    missing = sorted(set(all_targets) - set(genes))
+    if missing:
+        raise SystemExit(f"{len(missing)} targets are not in gene_names.csv: {missing[:10]}")
 
     # H1 effects moved onto the 2026 gene axis (3 H1 genes are not in it; 456 2026 genes get 0)
     z = np.load(a.h1, allow_pickle=True)
@@ -243,9 +252,10 @@ def main():
         f.attrs["encoding-version"] = "0.1.0"
         w = CSRWriter(f, len(genes))
         for ctx in contexts:
-            X = ad.read_h5ad(data / f"context_{ctx}.h5ad").X.tocsr()
+            targets = targets_by_ctx[ctx]
+            X = ad.read_h5ad(bundle.control_file(data, ctx)).X.tocsr()
             fold, delta, info = predict_folds(ctx, X, genes, targets, h1, k562, xb, shared)
-            print(f"context {ctx}: {info.in_k562.sum()} targets in K562; median genes changed >10%: "
+            print(f"context {ctx}: {info.in_k562.sum()}/{len(targets)} targets in K562; median genes changed >10%: "
                   f"{int(info.n_genes_changed_10pct.median())}", flush=True)
             if diag:
                 np.save(diag / f"log_change_{ctx}.npy", delta.astype(np.float32))
@@ -262,7 +272,7 @@ def main():
             print(f"  wrote {w.rows} cells, {w.nnz:,} stored counts so far", flush=True)
             del X
         w.close()
-        obs = pd.DataFrame({"target_gene": pd.Categorical(obs_t, categories=targets),
+        obs = pd.DataFrame({"target_gene": pd.Categorical(obs_t, categories=all_targets),
                             "context": pd.Categorical(obs_c, categories=contexts)},
                            index=[f"pred_{i}" for i in range(len(obs_t))])
         ad.io.write_elem(f, "obs", obs)
@@ -270,7 +280,8 @@ def main():
         for k in ("obsm", "varm", "obsp", "varp", "layers", "uns"):
             ad.io.write_elem(f, k, {})
     json.dump({"preset": a.preset, "params": PARAMS, "seed": a.seed, "cells_per_pert": CELLS_PER_PERT, "n_cells": w.rows,
-               "nnz": int(w.nnz), "contexts": contexts},
+               "nnz": int(w.nnz), "contexts": contexts, "panel_id": (bundle.read_manifest(data) or {}).get("panel_id"),
+               "n_targets": {c: len(targets_by_ctx[c]) for c in contexts}},
               open(Path(a.out).with_suffix(".json"), "w"), indent=1)
     print(f"done: {w.rows} cells x {len(genes)} genes, {w.nnz:,} stored counts")
 

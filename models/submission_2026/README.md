@@ -1,7 +1,28 @@
-# VCC 2026 validation submission (contexts A, B, C)
+# VCC 2026 submission (final phase D, E, F; validation A, B, C)
 
 Applies the public-screen effect-borrowing method (`models/public_screens/`, RESULTS.md Round 4)
-to the 300 targets of panel `vcc2026-val-1` and packages the result in the official 2026 format.
+to the targets of a controls bundle and packages the result in the official 2026 format.
+
+## Final phase
+
+The final phase scores new contexts D, E, F against a new perturbation list that is published
+only inside its own bundle (`vcc datasets download controls-final`, `vcc` 0.3.0 or newer). A file
+built from the validation bundle uploads and then fails with "Submission is missing predictions
+for context(s): D, E, F". Nothing here assumes A/B/C any more:
+
+- `bundle.py` reads the contexts from the bundle's `manifest.json` (as `vcc prep` does), the
+  targets from `pert_counts.csv` (per context if it has a `context` column) and finds each
+  context's control `.h5ad` (`context_<X>.h5ad`, else by its obs `context` label).
+- `package_vcc.py` takes the contexts from the same manifest through `vcc.panel`, and writes the
+  panel into `meta.json` (`contexts`, `perts_fingerprint`, `panel_id`) exactly as `vcc prep` 0.3.0
+  does, so `vcc submit` refuses a file made for the other phase before uploading it.
+- The whole K562 screen ships (`data/k562_gwps_all/`), because the final targets are unknown
+  until the bundle is downloaded.
+
+Tested 2026-10-22 on a mock D/E/F bundle (validation controls relabelled, 29 K562 targets not in
+the validation panel, panel id `mock-final`): both presets build, every context passes
+`vcc prep --dry-run` 0.3.0, and the packaged `meta.json` matches the one plain `vcc prep` writes.
+In the final phase only a team's last final entry counts, and no scores are shown.
 
 ## Format (from the vcc CLI 0.2.2 and cell_eval2 0.18.0 docs)
 
@@ -18,6 +39,15 @@ to the 300 targets of panel `vcc2026-val-1` and packages the result in the offic
 
 - `h1_pseudobulk.npz`: log1p(CP10k) effects of the 2025 H1 knockdowns.
 - `shared_response.npz`: cross-line shared knockdown response (see "Shared response").
+- `k562_gwps_all/` (111 MB in 5 .npz files): all 11,258 rows of the K562 screen as int16
+  (z x 1000 after the loader's clip to +-10 and NaN -> 0), byte-shuffled and zlib-compressed.
+  `python k562_pack.py unpack --parts data/k562_gwps_all --out K562_gwps_rebuilt.h5ad` rebuilds
+  the full `.h5ad` (original obs, var, row order) and copies in the exact rows of the subset below.
+  Validation-panel folds are bit-identical to the original file (`c1_dev`, `d3_dev`, context A).
+  On 300 other K562 targets the core prediction agrees to max |log change| 0.004 (`d3_dev`
+  without the wide calls) and 0.03 (`c1_calibrated`); with the wide calls a few genes whose
+  per-target deviation is near zero can flip sign (row correlation >= 0.996 for `d3_dev`, >= 0.91
+  for `c1_dev`). With the old subset alone, 299 of those 300 targets would have had no K562 profile.
 - `k562_gwps_bulk_subset.h5ad` (31 MB): the rows of Replogle et al. 2022
   `K562_gwps_normalized_bulk_01.h5ad` (figshare article 20029387, file 35773217) that the build
   reads: the 300 panel targets, the 2025 H1 knockdowns and the non-targeting controls (996 of
@@ -26,8 +56,8 @@ to the 300 targets of panel `vcc2026-val-1` and packages the result in the offic
   the full 375 MB file (checked on context A for `c1_dev` and `d3_dev`, max |fold difference| 0).
   Added 2026-10-19 after figshare started answering downloads with HTTP 500 JSON error pages,
   which `wget -q -O` saved as the .h5ad and the build then failed on with
-  "file signature not found". The Colab notebook uses this file by default and no longer downloads
-  anything from figshare; `DOWNLOAD_FULL = True` in its data cell restores the download.
+  "file signature not found". Since the final phase the notebook uses `k562_gwps_all/` instead
+  (this file still supplies its exact rows) and has no figshare download at all.
 
 ## How cells are made
 
@@ -170,6 +200,8 @@ do it.
 ## Files
 
 - `build_submission.py`: predictions and cells, streamed to one `.h5ad` (~3 GB RAM).
+- `bundle.py`: contexts, targets and control files of an unzipped controls bundle.
+- `k562_pack.py`: packs / rebuilds the full K562 screen shipped in `data/k562_gwps_all/`.
 - `package_vcc.py`: runs the official `vcc prep --dry-run` on each context and the CLI's own
   label checks on the combined file, then writes the `.vcc` the way `vcc prep` does. Needed
   because `vcc prep` holds the whole ~16 GB matrix (about 25 GB peak); on a High-RAM machine,
