@@ -9,7 +9,12 @@ in pieces:
      no controls, per-cell cap);
   2. the combined obs is checked by the CLI's own validate_contexts / validate_targets;
   3. the .vcc is written exactly as vcc's _write_vcc does: tar(meta.json, pred.h5ad.zst),
-     with the minimal obs (target_gene, context; index "0".."n-1") that prep would write.
+     with the minimal obs (target_gene, context; index "0".."n-1") that prep would write, and
+     meta.json recording the panel (contexts, perts_fingerprint, panel_id) as vcc 0.3.0 does,
+     so `vcc submit` refuses a file built for the other phase before uploading it.
+
+The contexts come from the bundle's manifest.json next to pert_counts.csv (vcc's own
+resolve_contexts), so the same script packages A/B/C (validation) or D/E/F (final).
 
 On a machine with >= 32 GB RAM, `vcc prep pred.h5ad -g gene_names.csv --perts
 pert_counts.csv -o pred.vcc` on the same .h5ad is the one-step equivalent.
@@ -36,6 +41,7 @@ import numpy as np
 import pandas as pd
 import zstandard as zstd
 from vcc import __version__ as vcc_version
+from vcc import panel as vpanel
 from vcc import prep as vprep
 from vcc.vccfile import META_MEMBER, META_SCHEMA, PRED_MEMBER, validate_vcc
 
@@ -47,9 +53,13 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--vcc-bin", default=shutil.which("vcc") or os.path.expanduser("~/.local/bin/vcc"))
     ap.add_argument("--tmp", default=None)
+    ap.add_argument("--contexts", default=None, help="comma-separated; default: the bundle's manifest.json")
     a = ap.parse_args()
     data = Path(a.data)
     genes_csv, perts_csv = str(data / "gene_names.csv"), str(data / "pert_counts.csv")
+    required, manifest = vpanel.resolve_contexts(a.contexts, perts=perts_csv, genes=genes_csv)
+    panel_id = manifest.panel_id if manifest else None
+    print(f"panel {panel_id or '?'}: contexts {', '.join(required)} (vcc {vcc_version})", flush=True)
 
     # 0. minimal obs, as prep writes it
     with h5py.File(a.pred, "r") as f:
@@ -62,6 +72,9 @@ def main():
 
     # 1. official dry run per context
     contexts = sorted(minimal_obs["context"].unique())
+    if set(contexts) != set(required):
+        raise SystemExit(f"prediction has contexts {contexts} but this bundle needs {list(required)}: "
+                         "rebuild pred.h5ad from this bundle")
     backed = ad.read_h5ad(a.pred, backed="r")
     for ctx in contexts:
         rows = np.flatnonzero(minimal_obs["context"].to_numpy() == ctx)
@@ -81,12 +94,12 @@ def main():
 
     # 2. official obs-level checks on the combined file
     obs_only = ad.AnnData(obs=minimal_obs, var=pd.DataFrame(index=backed.var_names))
-    per_ctx = vprep.validate_contexts(obs_only, "context", "target_gene", "non-targeting", ("A", "B", "C"))
+    per_ctx = vprep.validate_contexts(obs_only, "context", "target_gene", "non-targeting", required)
     vprep.validate_targets(obs_only, vprep.read_pert_counts(perts_csv, "target_gene", "context", "non-targeting",
                                                             default_n_cells=400),
-                           "context", "target_gene", "non-targeting", ("A", "B", "C"), check_cell_counts=True)
+                           "context", "target_gene", "non-targeting", required, check_cell_counts=True)
     assert backed.var_names.tolist() == vprep.read_gene_list(genes_csv)
-    assert n_obs <= 400_000 and nnz <= 4_750_000_000
+    assert n_obs <= vprep.MAX_CELL_DIM and nnz <= (vprep.MAX_NNZ or 4_750_000_000), (n_obs, nnz)
     print("combined: contexts", per_ctx, "targets and cell counts verified; nnz", f"{nnz:,}", flush=True)
     backed.file.close()
 
@@ -103,8 +116,10 @@ def main():
             cctx.copy_stream(src, dst)
         meta = os.path.join(tmp, META_MEMBER)
         with open(meta, "w", encoding="utf-8") as fh:
-            json.dump({"schema": META_SCHEMA, "nnz": nnz, "n_obs": n_obs, "n_vars": n_vars,
-                       "cli_version": vcc_version}, fh, sort_keys=True)
+            meta_d = {"schema": META_SCHEMA, "nnz": nnz, "n_obs": n_obs, "n_vars": n_vars,
+                      "cli_version": vcc_version, "contexts": list(required),
+                      "perts_fingerprint": vpanel.perts_fingerprint(perts_csv), "panel_id": panel_id}
+            json.dump({k: v for k, v in meta_d.items() if v is not None}, fh, sort_keys=True)
 
         def _normalize(ti):
             ti.uid = ti.gid = 0; ti.uname = ti.gname = ""; ti.mtime = 0

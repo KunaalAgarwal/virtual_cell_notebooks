@@ -21,6 +21,8 @@ import anndata as ad
 import numpy as np
 import pandas as pd
 
+import bundle
+
 
 def corr(a, b):
     a = a - a.mean(); b = b - b.mean()
@@ -35,14 +37,14 @@ def main():
     ap.add_argument("--h1", required=True)
     ap.add_argument("--data", required=True)
     ap.add_argument("--out", required=True)
-    ap.add_argument("--contexts", default="A,B,C")
+    ap.add_argument("--contexts", default=None, help="comma-separated; default: the bundle's manifest.json")
     a = ap.parse_args()
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
     data, diag = Path(a.data), Path(a.diag)
     genes = pd.read_csv(data / "gene_names.csv")["gene_name"].astype(str).tolist()
     gi = {g: i for i, g in enumerate(genes)}
-    targets = pd.read_csv(data / "pert_counts.csv")["target_gene"].astype(str).tolist()
-    contexts = a.contexts.split(",")
+    contexts = bundle.contexts(data, a.contexts)
+    targets = bundle.targets(data, contexts)[contexts[0]]   # the 2026 lists are shared by all contexts
 
     z = np.load(a.h1, allow_pickle=True)
     h1g = z["genes"].astype(str); h1p = list(z["perts"].astype(str))
@@ -94,7 +96,7 @@ def main():
     rng = np.random.default_rng(1)
     fid = []
     for ctx in contexts:
-        X = ad.read_h5ad(data / f"context_{ctx}.h5ad").X
+        X = ad.read_h5ad(bundle.control_file(data, ctx)).X
         cmean = np.asarray(X.mean(0)).ravel()
         fold = np.load(diag / f"fold_{ctx}.npy")
         for t in rng.choice(targets, 5, replace=False):
